@@ -1,0 +1,49 @@
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { NextRequest, NextResponse } from 'next/server';
+
+const PROTECTED_PREFIXES = ['/dashboard', '/tools', '/history', '/settings'];
+
+export async function middleware(req: NextRequest) {
+  let res = NextResponse.next({ request: { headers: req.headers } });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          req.cookies.set({ name, value, ...options });
+          res = NextResponse.next({ request: { headers: req.headers } });
+          res.cookies.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          req.cookies.set({ name, value: '', ...options });
+          res = NextResponse.next({ request: { headers: req.headers } });
+          res.cookies.set({ name, value: '', ...options });
+        },
+      },
+    }
+  );
+
+  // Refresh session — required by @supabase/ssr
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const pathname = req.nextUrl.pathname;
+  const isProtected = PROTECTED_PREFIXES.some(p => pathname.startsWith(p));
+
+  if (isProtected && !session) {
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('redirectedFrom', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return res;
+}
+
+export const config = {
+  // Exclude static files, images, and payment webhooks (unauthenticated POST)
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/paddle/webhook).*)'],
+};
