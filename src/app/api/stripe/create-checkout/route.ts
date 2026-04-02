@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, PRICE_IDS } from '@/lib/stripe';
 import { createServerClient } from '@/lib/supabase/server';
-import type { StripePlan } from '@/types';
+import type { PaddlePlan as StripePlan } from '@/types';
 
 export async function POST(req: NextRequest) {
   const supabase = createServerClient();

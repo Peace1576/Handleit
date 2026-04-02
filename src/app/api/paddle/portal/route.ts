@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { rateLimit } from '@/lib/ratelimit';
 
 export async function POST(req: NextRequest) {
-  void req;
+  const rl = await rateLimit(req, 'api');
+  if (!rl.success) return rl.response!;
 
   const supabase = createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();

@@ -1,7 +1,10 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/ratelimit';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rl = await rateLimit(req, 'api');
+  if (!rl.success) return rl.response!;
   const supabase = createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 

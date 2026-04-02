@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server';
 import Groq from 'groq-sdk';
 import { getPrompt } from '@/lib/prompts';
+import { rateLimit } from '@/lib/ratelimit';
 import type { ToolId } from '@/types';
 
 const VALID_TOOLS: ToolId[] = ['form', 'letter', 'reply'];
 
 export async function POST(req: NextRequest) {
+  // 0. Rate limit — 20 AI requests per minute per IP
+  const rl = await rateLimit(req, 'ai');
+  if (!rl.success) return rl.response!;
+
   // 1. Authenticate
   const supabase = createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -15,14 +20,20 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. Parse + validate body
+  const MAX_INPUT_LENGTH = 8000;    // ~6,000 words — enough for any form
+  const MAX_FILE_B64_LENGTH = 28_000_000; // ~20 MB base64
+  const VALID_LANGUAGES = ['en', 'es', 'fr', 'pt', 'de', 'zh', 'ar', 'hi'];
+  const VALID_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain'];
+
   let tool_id: ToolId, input_text: string, company_type: string | undefined;
   let file_data: string | undefined, file_mime_type: string | undefined;
   let language: string | undefined;
   try {
     const body = await req.json();
     tool_id = body.tool_id;
-    input_text = (body.input_text ?? '').trim();
-    company_type = body.company_type;
+    input_text = String(body.input_text ?? '').trim().slice(0, MAX_INPUT_LENGTH);
+    // Sanitize company_type — alphanumeric + spaces only, max 50 chars
+    company_type = body.company_type ? String(body.company_type).replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 50) : undefined;
     file_data = body.file_data;
     file_mime_type = body.file_mime_type;
     language = body.language;
@@ -31,11 +42,23 @@ export async function POST(req: NextRequest) {
   }
 
   if (!VALID_TOOLS.includes(tool_id)) {
-    return NextResponse.json({ error: 'Invalid tool_id' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
   // Require at least text OR a file
   if (!input_text && !file_data) {
     return NextResponse.json({ error: 'Provide text or upload a file' }, { status: 400 });
+  }
+  // Validate file MIME type against allowlist
+  if (file_mime_type && !VALID_MIME_TYPES.includes(file_mime_type)) {
+    return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 });
+  }
+  // Reject oversized file uploads
+  if (file_data && file_data.length > MAX_FILE_B64_LENGTH) {
+    return NextResponse.json({ error: 'File too large' }, { status: 400 });
+  }
+  // Validate language — only allow known codes
+  if (language && !VALID_LANGUAGES.includes(language)) {
+    language = 'en';
   }
 
   // 3. Check usage — service role bypasses RLS

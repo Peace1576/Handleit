@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaddle } from '@/lib/paddle';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { rateLimit } from '@/lib/ratelimit';
 
 export async function POST(req: NextRequest) {
+  // Rate limit webhooks — still need protection against flood attacks
+  const rl = await rateLimit(req, 'webhook');
+  if (!rl.success) return rl.response!;
+
   const rawBody = await req.text();
   const signature = req.headers.get('paddle-signature') ?? '';
   const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET ?? '';
@@ -11,7 +16,7 @@ export async function POST(req: NextRequest) {
   const paddle = getPaddle();
   let event;
   try {
-    event = paddle.webhooks.unmarshal(rawBody, webhookSecret, signature);
+    event = await paddle.webhooks.unmarshal(rawBody, webhookSecret, signature);
   } catch (err) {
     console.error('Paddle webhook signature verification failed:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
@@ -20,7 +25,7 @@ export async function POST(req: NextRequest) {
   const adminSupabase = createServiceRoleClient();
 
   try {
-    const data = event.data as Record<string, unknown>;
+    const data = event.data as unknown as Record<string, unknown>;
 
     // ── transaction.completed ─────────────────────────────────────────────────
     // Fired when a checkout payment succeeds (both one-time and subscription first payment)
