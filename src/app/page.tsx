@@ -1,11 +1,57 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Particles } from '@/components/Particles';
 import { HandleItRobotLogo } from '@/components/Logo';
 import { ClipboardList, Mail, MessageCircle } from 'lucide-react';
+
+/* ── Preview card examples for each tab ── */
+const PREVIEW_TABS = [
+  {
+    label: 'Forms',
+    color: '#1A56DB',
+    accentBg: 'rgba(26,86,219,0.2)',
+    accentBorder: 'rgba(26,86,219,0.3)',
+    textColor: '#93C5FD',
+    input: 'Box 14 on my W-2 says "NY SDI $31.20" — what is this?',
+    title: '✓ HandleIt explained it:',
+    bullets: [
+      'NY SDI = New York State Disability Insurance — mandatory payroll tax',
+      '$31.20 is what was withheld from your paychecks this year',
+      'Yes — enter it in Box 14 on your NY state return to reduce your tax bill',
+    ],
+  },
+  {
+    label: 'Letters',
+    color: '#7C3AED',
+    accentBg: 'rgba(124,58,237,0.2)',
+    accentBorder: 'rgba(124,58,237,0.3)',
+    textColor: '#C4B5FD',
+    input: 'My landlord kept my security deposit but never listed any damages.',
+    title: '✓ Your letter is ready:',
+    bullets: [
+      'Opens with your legal right to itemized deductions under state law',
+      'Demands return of $[amount] within 14 days or small claims action follows',
+      'Professional tone — firm, not aggressive — courts respond well to this',
+    ],
+  },
+  {
+    label: 'Replies',
+    color: '#059669',
+    accentBg: 'rgba(5,150,105,0.2)',
+    accentBorder: 'rgba(5,150,105,0.3)',
+    textColor: '#6EE7B7',
+    input: 'Manager: "I need this report done by EOD or there will be consequences."',
+    title: '✓ 3 replies ready:',
+    bullets: [
+      'Assertive: "I\'ll have it done. Please confirm the exact scope now so I hit your mark."',
+      'Diplomatic: "Understood — prioritising this now. Any sections I should focus on first?"',
+      'Brief: "On it. Done by 5 PM."',
+    ],
+  },
+];
 
 const TOOLS = [
   { id: 'form-explainer',   Icon: ClipboardList, name: 'Form Explainer',   tagline: 'Plain English. Instantly.',          desc: 'Paste any confusing government, tax, legal, or insurance form. Get every field explained clearly.', color: '#1A56DB', glow: 'rgba(26,86,219,0.5)' },
@@ -33,12 +79,48 @@ export default function LandingPage() {
   const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+  const [fading, setFading] = useState(false);
+  const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 60);
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
+
+  /* Auto-rotate preview tabs every 3.5 s */
+  const switchTab = (idx: number) => {
+    if (idx === activeTab) return;
+    setFading(true);
+    setTimeout(() => { setActiveTab(idx); setFading(false); }, 220);
+  };
+
+  useEffect(() => {
+    autoRef.current = setInterval(() => {
+      setFading(true);
+      setTimeout(() => {
+        setActiveTab(prev => (prev + 1) % PREVIEW_TABS.length);
+        setFading(false);
+      }, 220);
+    }, 3500);
+    return () => { if (autoRef.current) clearInterval(autoRef.current); };
+  }, []);
+
+  /* Pause auto-rotate on manual click, resume after 8 s */
+  const handleTabClick = (idx: number) => {
+    if (autoRef.current) clearInterval(autoRef.current);
+    switchTab(idx);
+    autoRef.current = setInterval(() => {
+      setFading(true);
+      setTimeout(() => {
+        setActiveTab(prev => (prev + 1) % PREVIEW_TABS.length);
+        setFading(false);
+      }, 220);
+    }, 3500);
+  };
+
+  const tab = PREVIEW_TABS[activeTab];
 
   return (
     <div className="ios-bg" style={{ minHeight: '100vh', position: 'relative' }}>
@@ -118,28 +200,69 @@ export default function LandingPage() {
           ))}
         </div>
 
-        {/* App preview card */}
+        {/* App preview card — rotating tabs */}
         <div className="glass-card fade-up fade-up-delay-2 relative overflow-hidden" style={{ borderRadius: 28, padding: 20, marginTop: 52, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto' }}>
+          {/* Glow blob that follows active tab colour */}
+          <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: tab.color + '66', filter: 'blur(32px)', pointerEvents: 'none', transition: 'background 0.4s ease' }} />
           <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent)' }} />
-          <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(26,86,219,0.4)', filter: 'blur(30px)', pointerEvents: 'none' }} />
+
+          {/* Window chrome */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
             {['#FF5F57', '#FEBC2E', '#28C840'].map((c, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />)}
             <span style={{ marginLeft: 8, fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' }}>handleit.app</span>
           </div>
+
+          {/* Clickable tabs */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-            {[['Forms', '#1A56DB', true], ['Letters', 'rgba(255,255,255,0.08)', false], ['Replies', 'rgba(255,255,255,0.08)', false]].map(([t, bg, active]) => (
-              <div key={String(t)} style={{ padding: '5px 12px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: String(bg), color: active ? 'white' : 'rgba(255,255,255,0.4)', border: `1px solid ${active ? 'rgba(100,150,255,0.4)' : 'rgba(255,255,255,0.08)'}` }}>{String(t)}</div>
-            ))}
+            {PREVIEW_TABS.map((t, i) => {
+              const isActive = i === activeTab;
+              return (
+                <button
+                  key={t.label}
+                  onClick={() => handleTabClick(i)}
+                  style={{
+                    padding: '5px 14px',
+                    borderRadius: 12,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    background: isActive ? t.color : 'rgba(255,255,255,0.06)',
+                    color: isActive ? 'white' : 'rgba(255,255,255,0.38)',
+                    border: `1px solid ${isActive ? t.color + '80' : 'rgba(255,255,255,0.08)'}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.25s ease',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+            {/* Rotating dot indicator */}
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 5, alignItems: 'center', paddingRight: 2 }}>
+              {PREVIEW_TABS.map((_, i) => (
+                <div key={i} style={{ width: i === activeTab ? 16 : 5, height: 5, borderRadius: 99, background: i === activeTab ? tab.color : 'rgba(255,255,255,0.15)', transition: 'all 0.35s ease', cursor: 'pointer' }} onClick={() => handleTabClick(i)} />
+              ))}
+            </div>
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            Box 14 on my W-2 says &quot;NY SDI $31.20&quot; — what is this?
+
+          {/* Animated content */}
+          <div style={{ opacity: fading ? 0 : 1, transform: fading ? 'translateY(6px)' : 'translateY(0)', transition: 'opacity 0.22s ease, transform 0.22s ease' }}>
+            {/* Input bubble */}
+            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: 'rgba(255,255,255,0.55)', border: '1px solid rgba(255,255,255,0.08)', lineHeight: 1.5 }}>
+              {tab.input}
+            </div>
+
+            {/* Result bubble */}
+            <div style={{ background: tab.accentBg, borderRadius: 14, padding: '12px 14px', fontSize: 12, border: `1px solid ${tab.accentBorder}` }}>
+              <div style={{ fontWeight: 700, color: tab.textColor, marginBottom: 8 }}>{tab.title}</div>
+              {tab.bullets.map((b, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: i < tab.bullets.length - 1 ? 6 : 0, color: tab.textColor + 'cc', fontSize: 11, lineHeight: 1.55 }}>
+                  <span style={{ opacity: 0.6 }}>•</span><span>{b}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ background: 'rgba(26,86,219,0.2)', borderRadius: 14, padding: '12px 14px', fontSize: 12, border: '1px solid rgba(26,86,219,0.3)' }}>
-            <div style={{ fontWeight: 700, color: '#93C5FD', marginBottom: 8 }}>✓ HandleIt explained it:</div>
-            {['NY SDI = New York State Disability Insurance — mandatory payroll tax', '$31.20 is what was withheld from your paychecks this year', 'Yes — enter it in Box 14 on your NY state return to reduce your tax bill'].map((t, i) => (
-              <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, color: 'rgba(147,197,253,0.8)', fontSize: 11, lineHeight: 1.5 }}><span>•</span><span>{t}</span></div>
-            ))}
-          </div>
+
           <button onClick={() => router.push('/dashboard')} className="glass-btn-blue w-full" style={{ marginTop: 12, padding: '11px', borderRadius: 14, fontWeight: 700, fontSize: 13, color: 'white', border: 'none', cursor: 'pointer', width: '100%' }}>
             Try it yourself →
           </button>
@@ -149,7 +272,7 @@ export default function LandingPage() {
       {/* ── Social Proof ── */}
       <div className="glass" style={{ margin: '0 auto 80px', maxWidth: 800, borderRadius: 20, padding: '14px 24px', marginLeft: 'auto', marginRight: 'auto' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px 32px' }}>
-          {[['⭐', '4.9/5 rating'], ['✉️', '10,000+ letters'], ['🌍', '50+ countries'], ['💰', '$2M+ recovered']].map(([ico, t]) => (
+          {[['⭐', '4.8/5 early rating'], ['✉️', '300+ letters sent'], ['🌍', '14 countries'], ['💰', '$31K+ recovered']].map(([ico, t]) => (
             <span key={String(t)} style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{ico} {t}</span>
           ))}
         </div>
