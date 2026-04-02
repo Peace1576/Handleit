@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/next';
 import { PostHogProvider } from '@/components/PostHogProvider';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { LanguageGate } from '@/components/LanguageGate';
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </LanguageGate>
           </LanguageProvider>
         </PostHogProvider>
+        <Analytics />
       </body>
     </html>
   );
