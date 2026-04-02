@@ -39,10 +39,24 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
+/** Validate next path — prevents open redirect to external domains */
+function safeRedirectPath(next: string | null): string {
+  const fallback = '/dashboard';
+  if (!next) return fallback;
+  try {
+    if (!next.startsWith('/') || next.startsWith('//')) return fallback;
+    const ALLOWED_PREFIXES = ['/dashboard', '/tools', '/history', '/settings', '/pricing'];
+    const isAllowed = ALLOWED_PREFIXES.some(p => next === p || next.startsWith(p + '/') || next.startsWith(p + '?'));
+    return isAllowed ? next : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const redirectedFrom = params.get('redirectedFrom') ?? '/dashboard';
+  const redirectedFrom = safeRedirectPath(params.get('redirectedFrom'));
 
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail]     = useState('');

@@ -12,6 +12,12 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get('paddle-signature') ?? '';
   const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET ?? '';
 
+  // Reject immediately if webhook secret is not configured — never process unsigned events
+  if (!webhookSecret) {
+    console.error('Paddle webhook: PADDLE_WEBHOOK_SECRET is not set');
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
+  }
+
   // Verify Paddle webhook signature
   const paddle = getPaddle();
   let event;

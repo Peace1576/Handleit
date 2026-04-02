@@ -182,9 +182,9 @@ export async function POST(req: NextRequest) {
 
     result_text = completion.choices[0]?.message?.content ?? '';
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('AI error:', message);
-    return NextResponse.json({ error: message }, { status: 503 });
+    // Log internally but never expose raw API error details to the client
+    console.error('AI error:', err instanceof Error ? err.message : String(err));
+    return NextResponse.json({ error: 'AI service temporarily unavailable. Please try again in a moment.' }, { status: 503 });
   }
 
   // 6. Log usage, save result, decrement free uses — all in parallel
