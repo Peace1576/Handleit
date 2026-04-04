@@ -8,10 +8,18 @@ import { LanguageGate } from '@/components/LanguageGate';
 export const metadata: Metadata = {
   title: 'HandleIt — AI for Life Admin',
   description: 'AI that writes complaint letters, explains confusing forms, and crafts perfect replies to stressful messages. In seconds.',
+  metadataBase: new URL('https://handleit.help'),
   openGraph: {
     title: 'HandleIt — AI for Life Admin',
-    description: 'Stop stressing. Start HandleIting.',
+    description: 'AI that writes complaint letters, explains confusing forms & crafts perfect replies. Try free.',
     type: 'website',
+    url: 'https://handleit.help',
+    siteName: 'HandleIt',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'HandleIt — AI for Life Admin',
+    description: 'AI that writes complaint letters, explains confusing forms & crafts perfect replies. Try free.',
   },
 };
 
