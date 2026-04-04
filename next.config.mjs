@@ -41,10 +41,11 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  // Tell Next.js not to bundle these server-only packages — require() them at runtime instead.
-  // This avoids webpack trying to statically analyse pdf-parse's test loader and mammoth's binary deps.
-  serverExternalPackages: ['pdf-parse', 'mammoth'],
-  experimental: {},
+  experimental: {
+    // Tell Next.js not to bundle these server-only packages — require() them at runtime.
+    // Fixes pdf-parse and mammoth build errors on Vercel. (Next.js 14 key name)
+    serverComponentsExternalPackages: ['pdf-parse', 'mammoth'],
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
