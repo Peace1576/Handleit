@@ -129,9 +129,9 @@ export async function POST(req: NextRequest) {
 
     } else if (hasPdf) {
       // Extract text from PDF using pdf-parse
-      // Use require path that avoids pdf-parse's test file loader in Next.js
+      // pdf-parse is in serverExternalPackages so Next.js requires it at runtime, not bundled
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+      const pdfParse = require('pdf-parse');
       const buffer = Buffer.from(file_data!, 'base64');
       const parsed = await pdfParse(buffer);
       const extractedText = parsed.text?.trim();

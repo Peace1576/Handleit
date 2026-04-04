@@ -41,6 +41,9 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Tell Next.js not to bundle these server-only packages — require() them at runtime instead.
+  // This avoids webpack trying to statically analyse pdf-parse's test loader and mammoth's binary deps.
+  serverExternalPackages: ['pdf-parse', 'mammoth'],
   experimental: {},
   images: {
     remotePatterns: [
