@@ -79,11 +79,25 @@ function LoginForm() {
     reset();
     if (!email.trim() || !password) { setError('Please enter your email and password.'); return; }
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (error) setError(friendlyError(error.message));
-    else router.push(redirectedFrom);
-    setLoading(false);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) {
+        // Supabase returns "Invalid login credentials" for both wrong password
+        // AND unconfirmed email (to prevent email enumeration). Give a clearer hint.
+        if (error.message.includes('Invalid login credentials') || error.message.includes('invalid_credentials')) {
+          setError('Wrong email or password — or your email may not be confirmed yet. Check your inbox for a confirmation link.');
+        } else {
+          setError(friendlyError(error.message));
+        }
+      } else {
+        router.push(redirectedFrom);
+      }
+    } catch {
+      setError('Connection error. Please check your internet and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
