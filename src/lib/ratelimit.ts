@@ -1,14 +1,10 @@
 /**
  * Rate limiting for HandleIt API routes.
- *
- * Uses Upstash Redis when UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
- * are set (production). Falls back to a simple in-process memory store for
- * local dev so nothing breaks without Redis configured.
+ * Pure in-memory implementation — no Redis required.
+ * Works per serverless instance on Vercel (sufficient for a growing site).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-// ─── In-memory fallback (local dev / no Redis) ────────────────────────────────
 
 interface MemoryEntry {
   count: number;
@@ -17,7 +13,11 @@ interface MemoryEntry {
 
 const memStore = new Map<string, MemoryEntry>();
 
-function memoryLimit(key: string, limit: number, windowMs: number): { success: boolean; remaining: number; reset: number } {
+function memoryLimit(
+  key: string,
+  limit: number,
+  windowMs: number,
+): { success: boolean; remaining: number; reset: number } {
   const now = Date.now();
   const entry = memStore.get(key);
 
@@ -34,13 +34,13 @@ function memoryLimit(key: string, limit: number, windowMs: number): { success: b
   return { success: true, remaining: limit - entry.count, reset: entry.resetAt };
 }
 
-// ─── Rate limit configs ───────────────────────────────────────────────────────
+// ─── Rate limit tiers ─────────────────────────────────────────────────────────
 
 export type RateLimitTier =
-  | 'ai'        // AI generation — 20 req / 60s per IP
-  | 'auth'      // Login / signup — 10 req / 60s per IP
-  | 'api'       // General API — 60 req / 60s per IP
-  | 'webhook';  // Webhooks — 100 req / 60s (Paddle sends bursts)
+  | 'ai'        // AI generation  — 20 req / 60 s per IP
+  | 'auth'      // Login / signup — 10 req / 60 s per IP
+  | 'api'       // General API   — 60 req / 60 s per IP
+  | 'webhook';  // Webhooks      — 100 req / 60 s (Paddle sends bursts)
 
 const TIERS: Record<RateLimitTier, { limit: number; windowMs: number }> = {
   ai:      { limit: 20,  windowMs: 60_000 },
@@ -49,16 +49,15 @@ const TIERS: Record<RateLimitTier, { limit: number; windowMs: number }> = {
   webhook: { limit: 100, windowMs: 60_000 },
 };
 
-// ─── Main rate limit function ─────────────────────────────────────────────────
+// ─── Main export ──────────────────────────────────────────────────────────────
 
 export async function rateLimit(
   req: NextRequest,
   tier: RateLimitTier = 'api',
-  identifier?: string, // override IP — e.g. use user_id for authenticated routes
+  identifier?: string,
 ): Promise<{ success: boolean; response?: NextResponse }> {
   const { limit, windowMs } = TIERS[tier];
 
-  // Derive identifier: prefer explicit, then CF-Connecting-IP, then x-forwarded-for, then fallback
   const ip =
     identifier ??
     req.headers.get('cf-connecting-ip') ??
@@ -67,39 +66,7 @@ export async function rateLimit(
     'anonymous';
 
   const key = `rl:${tier}:${ip}`;
-
-  let result: { success: boolean; remaining: number; reset: number };
-
-  // Use Upstash Redis if configured
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    try {
-      const { Ratelimit } = await import('@upstash/ratelimit');
-      const { Redis } = await import('@upstash/redis');
-
-      const redis = new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN,
-      });
-
-      const rl = new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(limit, `${windowMs / 1000} s`),
-        prefix: 'handleit',
-      });
-
-      const upstashResult = await rl.limit(key);
-      result = {
-        success: upstashResult.success,
-        remaining: upstashResult.remaining,
-        reset: upstashResult.reset,
-      };
-    } catch {
-      // Redis unavailable — fall back to memory
-      result = memoryLimit(key, limit, windowMs);
-    }
-  } else {
-    result = memoryLimit(key, limit, windowMs);
-  }
+  const result = memoryLimit(key, limit, windowMs);
 
   if (!result.success) {
     const retryAfter = Math.ceil((result.reset - Date.now()) / 1000);
