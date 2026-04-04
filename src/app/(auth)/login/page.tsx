@@ -64,7 +64,12 @@ function LoginForm() {
   const [name, setName]       = useState('');
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
+  // Pre-fill error from URL params (e.g. ?error=auth_failed from /callback)
+  const [error, setError]     = useState<string | null>(() => {
+    const e = params.get('error');
+    if (e === 'auth_failed') return 'The confirmation link has expired or is invalid. Please sign in below or request a new confirmation email.';
+    return null;
+  });
   const [success, setSuccess] = useState<string | null>(null);
 
   const reset = () => { setError(null); setSuccess(null); };
