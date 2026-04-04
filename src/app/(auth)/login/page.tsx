@@ -87,6 +87,21 @@ function LoginForm() {
     if (!email.trim()) { setError('Please enter your email.'); return; }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setLoading(true);
+
+    // Block disposable / throwaway email addresses
+    try {
+      const check = await fetch(`https://www.disify.com/api/email/${encodeURIComponent(email.trim())}`)
+        .then(r => r.json())
+        .catch(() => null);
+      if (check && check.disposable === true) {
+        setError('Please use a real email address. Disposable/temporary emails are not allowed.');
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // If Disify is down, allow signup to proceed
+    }
+
     const supabase = createClient();
     const { error } = await supabase.auth.signUp({
       email: email.trim(),

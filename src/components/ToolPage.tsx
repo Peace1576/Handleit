@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAI } from '@/hooks/useAI';
+import { useUsage } from '@/hooks/useUsage';
 import { HandleItRobotLogo } from '@/components/Logo';
 import { UpgradeModal } from './UpgradeModal';
 import { ResultDisplay } from './ResultDisplay';
@@ -65,6 +66,7 @@ export function ToolPage({ tool }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { generate, result, loading, error } = useAI(() => setShowUpgrade(true));
+  const { plan, uses_remaining, refresh: refreshUsage } = useUsage();
 
   const readFileAsBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -151,6 +153,8 @@ export function ToolPage({ tool }: Props) {
       company_type: tool.id === 'letter' ? company : undefined,
       ...(hasFile ? { file_data: fileData!, file_mime_type: fileMime! } : {}),
     });
+    // Refresh usage count after each generation
+    refreshUsage();
   };
 
   const canSubmit = !loading && (input.trim().length > 0 || !!fileData);
@@ -298,7 +302,29 @@ export function ToolPage({ tool }: Props) {
         )}
 
         {/* Result */}
-        {result && !loading && <ResultDisplay result={result} color={tool.color} />}
+        {result && !loading && (
+          <>
+            <ResultDisplay result={result} color={tool.color} toolId={tool.id} />
+            {/* Usage nudge for free users after they see their result */}
+            {plan === 'free' && typeof uses_remaining === 'number' && (
+              <div className="glass" style={{ borderRadius: 18, padding: '14px 18px', marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, color: uses_remaining <= 1 ? '#FBBF24' : 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+                  {uses_remaining <= 0
+                    ? '🔒 You\'ve used all your free uses'
+                    : uses_remaining === 1
+                    ? '⚡ Last free use remaining!'
+                    : `✓ ${uses_remaining} of 5 free uses left`}
+                </span>
+                <button
+                  onClick={() => router.push('/pricing')}
+                  style={{ padding: '7px 16px', borderRadius: 14, fontSize: 12, fontWeight: 700, background: 'rgba(26,86,219,0.8)', color: 'white', border: '1px solid rgba(100,150,255,0.4)', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                >
+                  Upgrade →
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
