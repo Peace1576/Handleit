@@ -37,7 +37,7 @@ export default function CookiesPage() {
 
         <h3>Payment Cookies</h3>
         <ul>
-          <li><strong>Stripe:</strong> When you visit the checkout flow, Stripe sets cookies necessary for fraud prevention and secure payment processing. These are governed by <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer">Stripe&apos;s Privacy Policy</a>.</li>
+          <li><strong>Paddle:</strong> When you visit the checkout flow, Paddle sets cookies necessary for fraud prevention and secure payment processing. These are governed by <a href="https://www.paddle.com/legal/privacy" target="_blank" rel="noopener noreferrer">Paddle&apos;s Privacy Policy</a>.</li>
         </ul>
       </section>
 

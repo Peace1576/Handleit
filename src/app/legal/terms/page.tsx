@@ -39,7 +39,7 @@ export default function TermsPage() {
         <p><strong>Pro Monthly:</strong> Unlimited uses billed at $17/month.</p>
         <p><strong>Pro Annual:</strong> Unlimited uses billed at $149/year.</p>
         <p><strong>Lifetime:</strong> One-time payment of $97 for unlimited lifetime access.</p>
-        <p>All payments are processed securely via Stripe. By subscribing, you authorize us to charge your payment method on a recurring basis (for monthly/annual plans) until you cancel. Prices are in USD and subject to change with notice.</p>
+        <p>All payments are processed securely via Paddle. By subscribing, you authorize us to charge your payment method on a recurring basis (for monthly/annual plans) until you cancel. Prices are in USD and subject to change with notice.</p>
       </section>
 
       <section>

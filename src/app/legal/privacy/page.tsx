@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>Account information:</strong> email address, name, and password (or OAuth provider token via Google Sign-In)</li>
           <li><strong>Tool inputs:</strong> text you paste into our tools (form text, situations you describe, messages you want to reply to)</li>
-          <li><strong>Payment information:</strong> billing details are handled directly by Stripe; we do not store your card number</li>
+          <li><strong>Payment information:</strong> billing details are handled directly by Paddle; we do not store your card number</li>
         </ul>
         <h3>Information collected automatically:</h3>
         <ul>
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
         <ul>
           <li>To provide and improve the Service</li>
           <li>To authenticate you and manage your account</li>
-          <li>To process payments and manage subscriptions via Stripe</li>
+          <li>To process payments and manage subscriptions via Paddle</li>
           <li>To generate AI-powered outputs in response to your inputs</li>
           <li>To save your results to your account history (if you are logged in)</li>
           <li>To send transactional emails (account creation, payment receipts, cancellation confirmations)</li>
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
 
       <section>
         <h2>3. AI Processing and Data</h2>
-        <p>Your tool inputs are sent to Google&apos;s Gemini API to generate responses. Google&apos;s use of this data is governed by Google&apos;s API terms and privacy policy. We use the API under enterprise terms that restrict use of your data for model training.</p>
+        <p>Your tool inputs are sent to Groq&apos;s API to generate responses. Groq&apos;s use of this data is governed by <a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener noreferrer">Groq&apos;s Privacy Policy</a>. We use the API under terms that restrict use of your data for model training.</p>
         <p>We do not sell, share, or use your inputs to train our own models or any third-party models beyond what is necessary to deliver the Service to you.</p>
       </section>
 
@@ -50,8 +50,8 @@ export default function PrivacyPage() {
         <p>We do not sell your personal data. We share data only with:</p>
         <ul>
           <li><strong>Supabase:</strong> database and authentication infrastructure</li>
-          <li><strong>Stripe:</strong> payment processing</li>
-          <li><strong>Google (Gemini API):</strong> AI content generation</li>
+          <li><strong>Paddle:</strong> payment processing</li>
+          <li><strong>Groq:</strong> AI content generation</li>
           <li><strong>PostHog:</strong> product analytics (anonymized/pseudonymized)</li>
           <li><strong>Sentry:</strong> error monitoring (no user content in error reports)</li>
           <li><strong>Vercel:</strong> hosting and edge infrastructure</li>
