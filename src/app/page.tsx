@@ -7,6 +7,7 @@ import { Particles } from '@/components/Particles';
 import { HandleItRobotLogo } from '@/components/Logo';
 import { ClipboardList, Mail, MessageCircle } from 'lucide-react';
 import { isLifetimeDealActive } from '@/lib/launch';
+import DemoSection from '@/components/DemoSection';
 
 /* ── Preview card examples for each tab ── */
 const PREVIEW_TABS = [
@@ -332,6 +333,9 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+
+      {/* ── Animated Demo Section ── */}
+      <DemoSection />
 
       {/* ── Testimonials ── */}
       <section style={{ padding: '0 16px 80px', maxWidth: 900, margin: '0 auto' }}>
