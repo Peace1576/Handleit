@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Particles } from '@/components/Particles';
 import { HandleItRobotLogo } from '@/components/Logo';
 import { ClipboardList, Mail, MessageCircle } from 'lucide-react';
+import { isLifetimeDealActive } from '@/lib/launch';
 
 /* ── Preview card examples for each tab ── */
 const PREVIEW_TABS = [
@@ -64,7 +65,7 @@ const FAQS = [
   { q: 'Which forms can it handle?', a: "Any text-based form — W-2s, I-9s, insurance EOBs, lease agreements, tax forms, government applications, legal documents." },
   { q: 'Will the complaint letter work?', a: 'Most users report getting refunds, credits, and resolutions within 48 hours. A firm, professional letter dramatically increases your success rate.' },
   { q: 'Can I cancel Pro anytime?', a: 'Yes. One click in settings. No fees. You keep access until the end of your billing period.' },
-  { q: "What's the Lifetime plan?", a: 'Pay $97 once, use HandleIt forever — including all future features. Limited to the first 90 days only.' },
+  { q: "What's the Lifetime plan?", a: 'Pay $97 once, use HandleIt forever — including all future features. Limited to the first 90 days only.', lifetimeOnly: true },
   { q: 'How does the free plan work?', a: '5 total uses across all three tools. No credit card required. Enough to see exactly how powerful HandleIt is.' },
   { q: 'Is this better than ChatGPT?', a: 'HandleIt is purpose-built for life admin. Optimized prompts, clean interface, saved history — no prompt engineering needed.' },
 ];
@@ -79,6 +80,7 @@ export default function LandingPage() {
   const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const lifetimeActive = isLifetimeDealActive();
   const [activeTab, setActiveTab] = useState(0);
   const [fading, setFading] = useState(false);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -153,9 +155,11 @@ export default function LandingPage() {
       {/* ── Hero ── */}
       <section style={{ padding: '60px 16px 80px', maxWidth: 900, margin: '0 auto' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }} className="fade-up">
-          <div className="glass-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 20, marginBottom: 28, fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>
-            🚀 <span>Launch Special — $97 Lifetime Deal · 90 days only</span>
-          </div>
+          {lifetimeActive && (
+            <div className="glass-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 20, marginBottom: 28, fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>
+              🚀 <span>Launch Special — $97 Lifetime Deal · 90 days only</span>
+            </div>
+          )}
           <h1 style={{ fontWeight: 900, fontSize: 'clamp(36px,8vw,72px)', lineHeight: 1.05, letterSpacing: '-0.04em', marginBottom: 24, color: 'white' }}>
             Stop Stressing.<br />
             <span style={{ background: 'linear-gradient(135deg,#60A5FA,#818CF8,#C084FC)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
@@ -353,7 +357,7 @@ export default function LandingPage() {
       <section id="faq" style={{ padding: '0 16px 80px', maxWidth: 720, margin: '0 auto' }}>
         <h2 style={{ textAlign: 'center', fontWeight: 900, fontSize: 'clamp(24px,4vw,38px)', color: 'white', letterSpacing: '-0.03em', marginBottom: 40 }}>FAQ</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {FAQS.map((f, i) => (
+          {FAQS.filter(f => !f.lifetimeOnly || lifetimeActive).map((f, i) => (
             <div key={i} className="glass" style={{ borderRadius: 18, overflow: 'hidden', cursor: 'pointer' }} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
               <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: 'white', fontWeight: 600, fontSize: 14 }}>{f.q}</span>

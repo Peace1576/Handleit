@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Particles } from '@/components/Particles';
 import { HandleItRobotLogo } from '@/components/Logo';
 import { createClient } from '@/lib/supabase/client';
+import { isLifetimeDealActive, lifetimeDaysLeft } from '@/lib/launch';
 import type { PaddlePlan } from '@/types';
 
 // Paddle.js types
@@ -20,6 +21,8 @@ export default function PricingPage() {
   const [annual, setAnnual] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [paddleReady, setPaddleReady] = useState(false);
+  const lifetimeActive = isLifetimeDealActive();
+  const daysLeft = lifetimeDaysLeft();
 
   // Load Paddle.js and initialize
   useEffect(() => {
@@ -178,28 +181,32 @@ export default function PricingPage() {
             </button>
           </div>
 
-          {/* Lifetime */}
-          <div className="glass-card fade-up fade-up-delay-3 relative overflow-hidden" style={{ borderRadius: 24, padding: 24, border: '1px solid rgba(124,58,237,0.4)' }}>
-            <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(167,139,250,0.6),transparent)' }} />
-            <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'rgba(124,58,237,0.3)', filter: 'blur(30px)', pointerEvents: 'none' }} />
-            <div style={{ position: 'relative' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#A78BFA', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>LIFETIME</div>
-              <div style={{ fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: '-0.04em', marginBottom: 2 }}>$97</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>one-time payment</div>
-              {['Everything in Pro', 'Pay once, use forever', 'All future features', 'Early adopter badge'].map(f => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}><span style={{ color: '#A78BFA', fontWeight: 700 }}>✓</span>{f}</div>
-              ))}
-              <button
-                onClick={() => handleCheckout('lifetime')}
-                disabled={loading !== null}
-                className="glass-btn-purple w-full rounded-2xl"
-                style={{ marginTop: 20, padding: '14px', fontWeight: 800, fontSize: 14, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: 16, width: '100%', opacity: loading ? 0.7 : 1 }}
-              >
-                {loading === 'lifetime' ? 'Opening checkout…' : 'Get Lifetime Deal →'}
-              </button>
-              <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>⏰ Disappears in 90 days</p>
+          {/* Lifetime — only shown during the 90-day launch window */}
+          {lifetimeActive && (
+            <div className="glass-card fade-up fade-up-delay-3 relative overflow-hidden" style={{ borderRadius: 24, padding: 24, border: '1px solid rgba(124,58,237,0.4)' }}>
+              <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(167,139,250,0.6),transparent)' }} />
+              <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'rgba(124,58,237,0.3)', filter: 'blur(30px)', pointerEvents: 'none' }} />
+              <div style={{ position: 'relative' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#A78BFA', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>LIFETIME</div>
+                <div style={{ fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: '-0.04em', marginBottom: 2 }}>$97</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>one-time payment</div>
+                {['Everything in Pro', 'Pay once, use forever', 'All future features', 'Early adopter badge'].map(f => (
+                  <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}><span style={{ color: '#A78BFA', fontWeight: 700 }}>✓</span>{f}</div>
+                ))}
+                <button
+                  onClick={() => handleCheckout('lifetime')}
+                  disabled={loading !== null}
+                  className="glass-btn-purple w-full rounded-2xl"
+                  style={{ marginTop: 20, padding: '14px', fontWeight: 800, fontSize: 14, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: 16, width: '100%', opacity: loading ? 0.7 : 1 }}
+                >
+                  {loading === 'lifetime' ? 'Opening checkout…' : 'Get Lifetime Deal →'}
+                </button>
+                <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>
+                  ⏰ {daysLeft} day{daysLeft !== 1 ? 's' : ''} left — then gone forever
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Paddle badge */}
