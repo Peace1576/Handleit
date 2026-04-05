@@ -98,7 +98,7 @@ export default function PricingPage() {
 
       <div style={{ position: 'sticky', top: 16, zIndex: 40, padding: '0 16px', pointerEvents: 'none' }}>
         <div className="nav-bubble specular relative rounded-2xl mx-auto flex items-center justify-between tab-bar-expanded" style={{ maxWidth: 600, pointerEvents: 'all' }}>
-          <button onClick={() => router.push('/')} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>← Back</button>
+          <button onClick={() => window.history.length > 1 ? router.back() : router.push('/dashboard')} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>← Back</button>
           <div style={{ fontWeight: 900, fontSize: 17, color: 'white', display: 'flex', alignItems: 'center', gap: 8 }}>
             <HandleItRobotLogo size={48} /><span><span style={{ color: '#60A5FA' }}>Handle</span>It</span>
           </div>
