@@ -62,6 +62,22 @@ export function ResultDisplay({ result, color, toolId }: Props) {
     return () => { active = false; };
   }, [complaintDraft, toolId]);
 
+  useEffect(() => {
+    if (toolId !== 'letter' || !complaintDraft) return;
+    const params = new URLSearchParams(window.location.search);
+    const rawError = params.get('gmail_error');
+    if (!rawError) return;
+
+    const friendlyMessage =
+      rawError === 'gmail_connect_config'
+        ? 'Gmail connection is not fully configured on the server yet. Double-check the Google OAuth env vars in Vercel and redeploy.'
+        : rawError === 'gmail_missing_refresh_token'
+        ? 'Google connected, but no refresh token was returned. Remove the app from your Google account permissions, then try connecting again.'
+        : 'Gmail connection failed. Double-check your Google OAuth redirect URI and try again.';
+
+    setGmailError(friendlyMessage);
+  }, [complaintDraft, toolId]);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(displayText);
     setCopied(true);

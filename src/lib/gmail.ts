@@ -25,20 +25,29 @@ const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
 const GMAIL_DRAFTS_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/drafts';
 const STATE_COOKIE_NAME = 'handleit_gmail_oauth_state';
 
-function getOAuthConfig() {
+function getGoogleClientConfig() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const encryptionSecret = process.env.GOOGLE_TOKEN_ENCRYPTION_SECRET;
 
-  if (!clientId || !clientSecret || !appUrl || !encryptionSecret) {
-    throw new Error('Missing Gmail OAuth environment variables.');
+  if (!clientId || !clientSecret) {
+    throw new Error('Missing Google OAuth client environment variables.');
   }
 
-  const redirectUri = new URL('/api/gmail/callback', appUrl).toString();
-  const encryptionKey = createHash('sha256').update(encryptionSecret).digest();
+  return { clientId, clientSecret };
+}
 
-  return { clientId, clientSecret, redirectUri, encryptionKey };
+function getEncryptionKey() {
+  const encryptionSecret = process.env.GOOGLE_TOKEN_ENCRYPTION_SECRET;
+  if (!encryptionSecret) {
+    throw new Error('Missing Gmail token encryption secret.');
+  }
+
+  const encryptionKey = createHash('sha256').update(encryptionSecret).digest();
+  return encryptionKey;
+}
+
+export function buildGoogleRedirectUri(origin: string) {
+  return new URL('/api/gmail/callback', origin).toString();
 }
 
 export function createOAuthState(): string {
@@ -49,8 +58,9 @@ export function getStateCookieName() {
   return STATE_COOKIE_NAME;
 }
 
-export function buildGoogleConnectUrl(state: string) {
-  const { clientId, redirectUri } = getOAuthConfig();
+export function buildGoogleConnectUrl(state: string, origin: string) {
+  const { clientId } = getGoogleClientConfig();
+  const redirectUri = buildGoogleRedirectUri(origin);
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -86,8 +96,8 @@ async function postForm<T>(url: string, params: URLSearchParams): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function exchangeCodeForTokens(code: string): Promise<GoogleTokens> {
-  const { clientId, clientSecret, redirectUri } = getOAuthConfig();
+export async function exchangeCodeForTokens(code: string, redirectUri: string): Promise<GoogleTokens> {
+  const { clientId, clientSecret } = getGoogleClientConfig();
   return postForm<GoogleTokens>(GOOGLE_TOKEN_URL, new URLSearchParams({
     code,
     client_id: clientId,
@@ -98,7 +108,7 @@ export async function exchangeCodeForTokens(code: string): Promise<GoogleTokens>
 }
 
 export async function refreshAccessToken(refreshToken: string): Promise<GoogleTokens> {
-  const { clientId, clientSecret } = getOAuthConfig();
+  const { clientId, clientSecret } = getGoogleClientConfig();
   return postForm<GoogleTokens>(GOOGLE_TOKEN_URL, new URLSearchParams({
     client_id: clientId,
     client_secret: clientSecret,
@@ -129,7 +139,7 @@ export async function fetchGoogleProfile(accessToken: string): Promise<GmailProf
 }
 
 export function encryptRefreshToken(refreshToken: string): string {
-  const { encryptionKey } = getOAuthConfig();
+  const encryptionKey = getEncryptionKey();
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', encryptionKey, iv);
   const encrypted = Buffer.concat([cipher.update(refreshToken, 'utf8'), cipher.final()]);
@@ -139,7 +149,7 @@ export function encryptRefreshToken(refreshToken: string): string {
 }
 
 export function decryptRefreshToken(payload: string): string {
-  const { encryptionKey } = getOAuthConfig();
+  const encryptionKey = getEncryptionKey();
   const [ivB64, tagB64, dataB64] = payload.split('.');
   if (!ivB64 || !tagB64 || !dataB64) {
     throw new Error('Invalid encrypted token payload.');

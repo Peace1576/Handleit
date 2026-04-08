@@ -2,6 +2,8 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase/serv
 import { createGmailDraft, decryptRefreshToken, refreshAccessToken } from '@/lib/gmail';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 
 export async function POST(req: NextRequest) {

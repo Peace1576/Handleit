@@ -1,6 +1,8 @@
 import { createServerClient } from '@/lib/supabase/server';
-import { buildGoogleConnectUrl, createOAuthState, getStateCookieName } from '@/lib/gmail';
+import { buildGoogleConnectUrl, buildGoogleRedirectUri, createOAuthState, getStateCookieName } from '@/lib/gmail';
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 function safeRedirectPath(next: string | null): string {
   const fallback = '/tools/complaint-letter';
@@ -10,28 +12,36 @@ function safeRedirectPath(next: string | null): string {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    const loginUrl = new URL('/login', req.url);
-    loginUrl.searchParams.set('redirectedFrom', '/tools/complaint-letter');
-    return NextResponse.redirect(loginUrl);
+    if (!user) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirectedFrom', '/tools/complaint-letter');
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const state = createOAuthState();
+    const next = safeRedirectPath(req.nextUrl.searchParams.get('next'));
+    const redirectUri = buildGoogleRedirectUri(req.nextUrl.origin);
+    const res = NextResponse.redirect(buildGoogleConnectUrl(state, req.nextUrl.origin));
+
+    res.cookies.set({
+      name: getStateCookieName(),
+      value: JSON.stringify({ state, next, userId: user.id, redirectUri }),
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 10,
+    });
+
+    return res;
+  } catch (error) {
+    console.error('Gmail connect error:', error instanceof Error ? error.message : String(error));
+    const fallback = new URL('/tools/complaint-letter', req.url);
+    fallback.searchParams.set('gmail_error', 'gmail_connect_config');
+    return NextResponse.redirect(fallback);
   }
-
-  const state = createOAuthState();
-  const next = safeRedirectPath(req.nextUrl.searchParams.get('next'));
-  const res = NextResponse.redirect(buildGoogleConnectUrl(state));
-
-  res.cookies.set({
-    name: getStateCookieName(),
-    value: JSON.stringify({ state, next, userId: user.id }),
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 10,
-  });
-
-  return res;
 }

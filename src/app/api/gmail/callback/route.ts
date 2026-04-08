@@ -7,10 +7,13 @@ import {
 } from '@/lib/gmail';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 type StatePayload = {
   state: string;
   next: string;
   userId: string;
+  redirectUri: string;
 };
 
 function errorRedirect(req: NextRequest, next: string, message: string) {
@@ -46,7 +49,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const tokens = await exchangeCodeForTokens(code);
+    const tokens = await exchangeCodeForTokens(code, payload.redirectUri);
     if (!tokens.refresh_token || !tokens.access_token) {
       return errorRedirect(req, payload.next, 'gmail_missing_refresh_token');
     }
