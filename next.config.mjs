@@ -18,16 +18,16 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      // Scripts: self + Paddle checkout + PostHog analytics
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com https://us.i.posthog.com https://app.posthog.com",
+      // Scripts: self + Paddle checkout + PostHog analytics + Google tag
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com https://us.i.posthog.com https://app.posthog.com https://www.googletagmanager.com https://www.googleadservices.com https://www.google-analytics.com",
       // Styles: self + Google Fonts + inline (needed for styled-jsx)
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Fonts
       "font-src 'self' https://fonts.gstatic.com",
       // Images: self + Unsplash + data URIs (used for file preview)
-      "img-src 'self' data: https://images.unsplash.com",
-      // API connections: self + Supabase + Groq + Paddle + PostHog
-      `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://*.supabase.co'} https://api.groq.com https://sandbox-api.paddle.com https://api.paddle.com https://us.i.posthog.com https://app.posthog.com`,
+      "img-src 'self' data: https://images.unsplash.com https://www.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google-analytics.com",
+      // API connections: self + Supabase + Groq + Paddle + PostHog + Google tag
+      `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://*.supabase.co'} https://api.groq.com https://sandbox-api.paddle.com https://api.paddle.com https://us.i.posthog.com https://app.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://googleads.g.doubleclick.net https://www.googleadservices.com`,
       // Paddle checkout iframe
       "frame-src https://sandbox-buy.paddle.com https://buy.paddle.com https://customer.paddle.com",
       // No plugins
