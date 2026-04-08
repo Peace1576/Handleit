@@ -1,4 +1,5 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { hasFullAccessOverride } from '@/lib/entitlements';
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/ratelimit';
 
@@ -28,6 +29,15 @@ export async function GET(req: NextRequest) {
 
   if (error || !profile) {
     return NextResponse.json({ error: 'Failed to load profile' }, { status: 500 });
+  }
+
+  if (hasFullAccessOverride(user.email)) {
+    return NextResponse.json({
+      plan: 'lifetime',
+      uses_remaining: 999999,
+      display_name: profile.display_name,
+      is_test_override: true,
+    });
   }
 
   return NextResponse.json({

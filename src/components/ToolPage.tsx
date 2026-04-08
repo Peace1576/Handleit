@@ -65,7 +65,7 @@ export function ToolPage({ tool }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { generate, result, loading, error } = useAI(() => setShowUpgrade(true));
+  const { generate, result, loading, error, hydrate } = useAI(() => setShowUpgrade(true));
   const { plan, uses_remaining, refresh: refreshUsage } = useUsage();
 
   const readFileAsBase64 = (file: File): Promise<string> =>
@@ -142,6 +142,23 @@ export function ToolPage({ tool }: Props) {
     el.addEventListener('scroll', fn);
     return () => el.removeEventListener('scroll', fn);
   }, []);
+
+  useEffect(() => {
+    if (tool.id !== 'letter') return;
+    try {
+      const raw = localStorage.getItem('handleit_letter_result_v1');
+      if (!raw) return;
+      hydrate(JSON.parse(raw));
+    } catch {
+      localStorage.removeItem('handleit_letter_result_v1');
+    }
+  }, [hydrate, tool.id]);
+
+  useEffect(() => {
+    if (tool.id !== 'letter') return;
+    if (!result) return;
+    localStorage.setItem('handleit_letter_result_v1', JSON.stringify(result));
+  }, [result, tool.id]);
 
   const handleSubmit = async () => {
     const hasText = input.trim().length > 0;

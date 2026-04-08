@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ToolId } from '@/types';
+import type { GeneratedResult, ToolId } from '@/types';
 
 interface GenerateParams {
   tool_id: ToolId;
@@ -12,7 +12,7 @@ interface GenerateParams {
 }
 
 export function useAI(onUpgradeRequired?: () => void) {
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<GeneratedResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +42,10 @@ export function useAI(onUpgradeRequired?: () => void) {
       }
 
       const data = await res.json();
-      setResult(data.result);
+      setResult({
+        text: data.result,
+        complaintDraft: data.complaint_draft ?? null,
+      });
     } catch {
       setError('Connection error. Please try again.');
     } finally {
@@ -50,7 +53,12 @@ export function useAI(onUpgradeRequired?: () => void) {
     }
   };
 
+  const hydrate = (value: GeneratedResult | null) => {
+    setResult(value);
+    setError(null);
+  };
+
   const reset = () => { setResult(null); setError(null); };
 
-  return { generate, result, loading, error, reset };
+  return { generate, result, loading, error, reset, hydrate };
 }

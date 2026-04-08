@@ -1,6 +1,20 @@
 export type Plan = 'free' | 'basic' | 'pro' | 'lifetime';
 export type ToolId = 'form' | 'letter' | 'reply';
 
+export interface ComplaintDraft {
+  companyName: string | null;
+  recipientName: string | null;
+  recipientEmail: string | null;
+  recipientRole: string | null;
+  subject: string;
+  body: string;
+}
+
+export interface GeneratedResult {
+  text: string;
+  complaintDraft?: ComplaintDraft | null;
+}
+
 export interface Profile {
   id: string;
   user_id: string;

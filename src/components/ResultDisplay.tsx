@@ -1,19 +1,69 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { GeneratedResult } from '@/types';
 
 interface Props {
-  result: string;
+  result: string | GeneratedResult;
   color: string;
   toolId?: string; // 'letter' | 'form' | 'reply'
 }
 
 export function ResultDisplay({ result, color, toolId }: Props) {
+  const displayText = typeof result === 'string' ? result : result.text;
+  const complaintDraft = typeof result === 'string' ? null : (result.complaintDraft ?? null);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [gmailLoading, setGmailLoading] = useState(toolId === 'letter' && !!complaintDraft);
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [gmailEmail, setGmailEmail] = useState<string | null>(null);
+  const [recipientEmail, setRecipientEmail] = useState(complaintDraft?.recipientEmail ?? '');
+  const [emailSubject, setEmailSubject] = useState(complaintDraft?.subject ?? '');
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [gmailMessage, setGmailMessage] = useState<string | null>(null);
+  const [gmailError, setGmailError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRecipientEmail(complaintDraft?.recipientEmail ?? '');
+    setEmailSubject(complaintDraft?.subject ?? '');
+  }, [complaintDraft?.recipientEmail, complaintDraft?.subject]);
+
+  useEffect(() => {
+    if (toolId !== 'letter' || !complaintDraft) {
+      setGmailLoading(false);
+      return;
+    }
+
+    let active = true;
+    setGmailLoading(true);
+    fetch('/api/gmail/status')
+      .then(async res => {
+        if (!res.ok) {
+          throw new Error('Could not load Gmail connection.');
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (!active) return;
+        setGmailConnected(!!data.connected);
+        setGmailEmail(data.email ?? null);
+      })
+      .catch(() => {
+        if (!active) return;
+        setGmailConnected(false);
+        setGmailEmail(null);
+      })
+      .finally(() => {
+        if (!active) return;
+        setGmailLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [complaintDraft, toolId]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(result);
+    navigator.clipboard.writeText(displayText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -23,7 +73,7 @@ export function ResultDisplay({ result, color, toolId }: Props) {
     const win = window.open('', '_blank');
     if (!win) { setDownloading(false); return; }
 
-    const htmlLines = result
+    const htmlLines = displayText
       .split('\n')
       .map(line => {
         if (!line.trim()) return '<div style="height:10px"></div>';
@@ -87,7 +137,62 @@ export function ResultDisplay({ result, color, toolId }: Props) {
     setTimeout(() => setDownloading(false), 1000);
   };
 
-  const lines = result.split('\n').map((line, i) => {
+  const handleConnectGmail = () => {
+    setGmailError(null);
+    setGmailMessage(null);
+    window.location.href = '/api/gmail/connect?next=/tools/complaint-letter';
+  };
+
+  const handleDisconnectGmail = async () => {
+    setDisconnecting(true);
+    setGmailError(null);
+    setGmailMessage(null);
+    try {
+      const res = await fetch('/api/gmail/status', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? 'Could not disconnect Gmail.');
+      }
+      setGmailConnected(false);
+      setGmailEmail(null);
+      setGmailMessage('Gmail disconnected.');
+    } catch (error) {
+      setGmailError(error instanceof Error ? error.message : 'Could not disconnect Gmail.');
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!complaintDraft) return;
+    setSavingDraft(true);
+    setGmailError(null);
+    setGmailMessage(null);
+
+    try {
+      const res = await fetch('/api/gmail/drafts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: recipientEmail.trim() || null,
+          subject: emailSubject.trim(),
+          body: complaintDraft.body,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? 'Could not create Gmail draft.');
+      }
+      setGmailMessage('Saved to Gmail drafts. You can review and send it from Gmail.');
+      window.open('https://mail.google.com/mail/u/0/#drafts', '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      setGmailError(error instanceof Error ? error.message : 'Could not create Gmail draft.');
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const lines = displayText.split('\n').map((line, i) => {
     if (!line.trim()) return <div key={i} style={{ height: 8 }} />;
     const clean = line.replace(/\*\*/g, '');
     if (line.startsWith('**') || (line.toUpperCase() === line && line.length < 30 && line.trim()))
@@ -133,6 +238,115 @@ export function ResultDisplay({ result, color, toolId }: Props) {
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 16 }}>
         {lines}
       </div>
+
+      {toolId === 'letter' && complaintDraft && (
+        <div style={{ marginTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 18 }}>
+          <div style={{ color: 'white', fontWeight: 700, fontSize: 15, marginBottom: 12 }}>Email Draft Tools</div>
+
+          <div style={{ display: 'grid', gap: 10, marginBottom: 14 }}>
+            <div style={{ padding: '12px 14px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Detected Company</div>
+              <div style={{ color: 'rgba(255,255,255,0.86)', fontSize: 14 }}>{complaintDraft.companyName ?? 'Could not confidently detect one'}</div>
+            </div>
+
+            <div style={{ padding: '12px 14px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Suggested Recipient</div>
+              <div style={{ color: 'rgba(255,255,255,0.86)', fontSize: 14 }}>
+                {complaintDraft.recipientName ?? 'Customer Relations Team'}
+                {complaintDraft.recipientRole ? ` · ${complaintDraft.recipientRole}` : ''}
+              </div>
+            </div>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Recipient Email</span>
+              <input
+                value={recipientEmail}
+                onChange={e => setRecipientEmail(e.target.value)}
+                placeholder="support@company.com"
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: 14,
+                  fontSize: 14,
+                  color: 'white',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                }}
+              />
+            </label>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Subject</span>
+              <input
+                value={emailSubject}
+                onChange={e => setEmailSubject(e.target.value)}
+                placeholder="Complaint regarding recent experience"
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: 14,
+                  fontSize: 14,
+                  color: 'white',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                }}
+              />
+            </label>
+          </div>
+
+          <div style={{ padding: '12px 14px', borderRadius: 14, background: 'rgba(26,86,219,0.12)', border: '1px solid rgba(96,165,250,0.22)', marginBottom: 14 }}>
+            <div style={{ color: 'rgba(255,255,255,0.82)', fontSize: 13, lineHeight: 1.6 }}>
+              {gmailLoading
+                ? 'Checking Gmail connection…'
+                : gmailConnected
+                ? `Connected Gmail: ${gmailEmail ?? 'Google account connected'}`
+                : 'Connect Gmail to save this complaint as a draft. If the AI could not find the company email, you can type it above before saving.'}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {!gmailConnected ? (
+              <button
+                onClick={handleConnectGmail}
+                className="glass-btn-blue"
+                style={{ padding: '10px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700, color: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Connect Gmail
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleSaveDraft}
+                  disabled={savingDraft || !emailSubject.trim()}
+                  className="glass-btn-blue"
+                  style={{ padding: '10px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700, color: 'white', border: 'none', cursor: savingDraft ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: savingDraft || !emailSubject.trim() ? 0.7 : 1 }}
+                >
+                  {savingDraft ? 'Saving Draft…' : 'Save to Gmail Drafts'}
+                </button>
+                <button
+                  onClick={handleDisconnectGmail}
+                  disabled={disconnecting}
+                  className="glass-btn"
+                  style={{ padding: '10px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.75)', border: 'none', cursor: disconnecting ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}
+                >
+                  {disconnecting ? 'Disconnecting…' : 'Disconnect Gmail'}
+                </button>
+              </>
+            )}
+          </div>
+
+          {gmailMessage && (
+            <div style={{ marginTop: 12, color: '#86EFAC', fontSize: 13, lineHeight: 1.5 }}>{gmailMessage}</div>
+          )}
+          {gmailError && (
+            <div style={{ marginTop: 12, color: '#FCA5A5', fontSize: 13, lineHeight: 1.5 }}>{gmailError}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

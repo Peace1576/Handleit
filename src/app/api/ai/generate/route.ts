@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server';
 import Groq from 'groq-sdk';
+import { parseComplaintDraft } from '@/lib/complaintLetter';
+import { hasFullAccessOverride } from '@/lib/entitlements';
 import { getPrompt } from '@/lib/prompts';
 import { rateLimit } from '@/lib/ratelimit';
-import type { ToolId } from '@/types';
+import type { ComplaintDraft, ToolId } from '@/types';
 
 const VALID_TOOLS: ToolId[] = ['form', 'letter', 'reply'];
 
@@ -80,7 +82,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
   }
 
-  if (profile.plan === 'free' && profile.uses_remaining <= 0) {
+  const hasFullAccess = hasFullAccessOverride(user.email);
+
+  if (!hasFullAccess && profile.plan === 'free' && profile.uses_remaining <= 0) {
     return NextResponse.json({ error: 'upgrade_required' }, { status: 402 });
   }
 
@@ -96,11 +100,14 @@ export async function POST(req: NextRequest) {
   };
   const targetLanguage = languageNames[language ?? 'en'] ?? 'English';
   const fullSystemPrompt = language && language !== 'en'
-    ? `${systemPrompt}\n\nIMPORTANT: You MUST respond entirely in ${targetLanguage}. All explanations, headings, and text must be in ${targetLanguage}.`
+    ? tool_id === 'letter'
+      ? `${systemPrompt}\n\nIMPORTANT: The metadata labels (COMPANY_NAME, RECIPIENT_NAME, RECIPIENT_EMAIL, RECIPIENT_ROLE, SUBJECT, BODY_START, BODY_END) must remain exactly in English. Only the SUBJECT value and the BODY content should be written in ${targetLanguage}.`
+      : `${systemPrompt}\n\nIMPORTANT: You MUST respond entirely in ${targetLanguage}. All explanations, headings, and text must be in ${targetLanguage}.`
     : systemPrompt;
 
   // 5. Call Groq — vision model for images, text extraction for PDFs/docs
   let result_text: string;
+  let complaint_draft: ComplaintDraft | null = null;
   try {
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -180,7 +187,13 @@ export async function POST(req: NextRequest) {
       max_tokens: 2048,
     });
 
-    result_text = completion.choices[0]?.message?.content ?? '';
+    const rawResult = completion.choices[0]?.message?.content ?? '';
+    if (tool_id === 'letter') {
+      complaint_draft = parseComplaintDraft(rawResult);
+      result_text = complaint_draft.body;
+    } else {
+      result_text = rawResult;
+    }
   } catch (err) {
     // Log internally but never expose raw API error details to the client
     console.error('AI error:', err instanceof Error ? err.message : String(err));
@@ -191,10 +204,10 @@ export async function POST(req: NextRequest) {
   await Promise.all([
     adminSupabase.from('usage_logs').insert({ user_id: user.id, tool_id }).then(),
     adminSupabase.from('saved_results').insert({ user_id: user.id, tool_id, input_text, result_text }).then(),
-    ...(profile.plan === 'free'
+    ...(!hasFullAccess && profile.plan === 'free'
       ? [adminSupabase.from('profiles').update({ uses_remaining: profile.uses_remaining - 1, updated_at: new Date().toISOString() }).eq('user_id', user.id).then()]
       : []),
   ]);
 
-  return NextResponse.json({ result: result_text });
+  return NextResponse.json({ result: result_text, complaint_draft });
 }
