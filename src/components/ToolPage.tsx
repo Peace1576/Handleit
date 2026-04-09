@@ -152,7 +152,7 @@ export function ToolPage({ tool }: Props) {
     } catch {
       localStorage.removeItem('handleit_letter_result_v1');
     }
-  }, [hydrate, tool.id]);
+  }, [tool.id, hydrate]);
 
   useEffect(() => {
     if (tool.id !== 'letter') return;

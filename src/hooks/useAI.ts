@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { GeneratedResult, ToolId } from '@/types';
 
 interface GenerateParams {
@@ -16,7 +16,7 @@ export function useAI(onUpgradeRequired?: () => void) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generate = async ({ tool_id, input_text, company_type, file_data, file_mime_type }: GenerateParams) => {
+  const generate = useCallback(async ({ tool_id, input_text, company_type, file_data, file_mime_type }: GenerateParams) => {
     setLoading(true);
     setResult(null);
     setError(null);
@@ -51,14 +51,14 @@ export function useAI(onUpgradeRequired?: () => void) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [onUpgradeRequired]);
 
   const hydrate = (value: GeneratedResult | null) => {
     setResult(value);
     setError(null);
   };
 
-  const reset = () => { setResult(null); setError(null); };
+  const reset = useCallback(() => { setResult(null); setError(null); }, []);
 
-  return { generate, result, loading, error, reset, hydrate };
+  return { generate, result, loading, error, reset, hydrate: useCallback(hydrate, []) };
 }

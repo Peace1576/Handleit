@@ -12,6 +12,7 @@ interface Props {
 export function ResultDisplay({ result, color, toolId }: Props) {
   const displayText = typeof result === 'string' ? result : result.text;
   const complaintDraft = typeof result === 'string' ? null : (result.complaintDraft ?? null);
+  const hasComplaintDraft = !!complaintDraft;
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [gmailLoading, setGmailLoading] = useState(toolId === 'letter' && !!complaintDraft);
@@ -30,7 +31,7 @@ export function ResultDisplay({ result, color, toolId }: Props) {
   }, [complaintDraft?.recipientEmail, complaintDraft?.subject]);
 
   useEffect(() => {
-    if (toolId !== 'letter' || !complaintDraft) {
+    if (toolId !== 'letter' || !hasComplaintDraft) {
       setGmailLoading(false);
       return;
     }
@@ -68,10 +69,10 @@ export function ResultDisplay({ result, color, toolId }: Props) {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [complaintDraft, toolId]);
+  }, [toolId, hasComplaintDraft]);
 
   useEffect(() => {
-    if (toolId !== 'letter' || !complaintDraft) return;
+    if (toolId !== 'letter' || !hasComplaintDraft) return;
     const params = new URLSearchParams(window.location.search);
     const rawError = params.get('gmail_error');
     if (!rawError) return;
@@ -84,7 +85,7 @@ export function ResultDisplay({ result, color, toolId }: Props) {
         : 'Gmail connection failed. Double-check your Google OAuth redirect URI and try again.';
 
     setGmailError(friendlyMessage);
-  }, [complaintDraft, toolId]);
+  }, [toolId, hasComplaintDraft]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(displayText);
