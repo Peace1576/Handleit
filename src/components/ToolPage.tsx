@@ -9,9 +9,10 @@ import { UpgradeModal } from './UpgradeModal';
 import { ResultDisplay } from './ResultDisplay';
 import { UsageBar } from './UsageBar';
 import { Particles } from './Particles';
+import { createClient } from '@/lib/supabase/client';
 import { ClipboardList, Mail, MessageCircle, Upload, X, FileText, ImageIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ToolId } from '@/types';
+import type { GeneratedResult, ToolId } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const TOOL_ICONS: Record<ToolId, LucideIcon> = {
@@ -45,6 +46,50 @@ const ACCEPTED_TYPES: Record<string, string> = {
 };
 const ACCEPTED_EXTENSIONS = '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.docx,.doc,.txt';
 const MAX_FILE_MB = 20;
+const LETTER_RESULT_CACHE_KEY = 'handleit_letter_result_v2';
+const LEGACY_LETTER_RESULT_CACHE_KEY = 'handleit_letter_result_v1';
+const LETTER_RESULT_CACHE_TTL_MS = 30 * 60 * 1000;
+
+interface StoredLetterResult {
+  userId: string;
+  savedAt: number;
+  result: GeneratedResult;
+}
+
+function clearStoredLetterResult() {
+  localStorage.removeItem(LETTER_RESULT_CACHE_KEY);
+  localStorage.removeItem(LEGACY_LETTER_RESULT_CACHE_KEY);
+}
+
+function readStoredLetterResult(userId: string | null): GeneratedResult | null {
+  if (!userId) {
+    clearStoredLetterResult();
+    return null;
+  }
+
+  // Drop the old cache shape so stale complaint letters stop reappearing.
+  localStorage.removeItem(LEGACY_LETTER_RESULT_CACHE_KEY);
+
+  const raw = localStorage.getItem(LETTER_RESULT_CACHE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<StoredLetterResult>;
+    const isExpired = typeof parsed.savedAt !== 'number' || Date.now() - parsed.savedAt > LETTER_RESULT_CACHE_TTL_MS;
+    const cachedResult = parsed.result;
+    const hasValidResult = !!cachedResult && typeof cachedResult.text === 'string';
+
+    if (parsed.userId !== userId || isExpired || !hasValidResult) {
+      clearStoredLetterResult();
+      return null;
+    }
+
+    return cachedResult;
+  } catch {
+    clearStoredLetterResult();
+    return null;
+  }
+}
 
 interface Props {
   tool: ToolConfig;
@@ -62,10 +107,11 @@ export function ToolPage({ tool }: Props) {
   const [fileMime, setFileMime] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [viewerUserId, setViewerUserId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { generate, result, loading, error, hydrate } = useAI(() => setShowUpgrade(true));
+  const { generate, result, loading, error, hydrate, reset } = useAI(() => setShowUpgrade(true));
   const { plan, uses_remaining, refresh: refreshUsage } = useUsage();
 
   const readFileAsBase64 = (file: File): Promise<string> =>
@@ -145,20 +191,63 @@ export function ToolPage({ tool }: Props) {
 
   useEffect(() => {
     if (tool.id !== 'letter') return;
-    try {
-      const raw = localStorage.getItem('handleit_letter_result_v1');
-      if (!raw) return;
-      hydrate(JSON.parse(raw));
-    } catch {
-      localStorage.removeItem('handleit_letter_result_v1');
-    }
-  }, [tool.id, hydrate]);
+    const supabase = createClient();
+    let active = true;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      setViewerUserId(data.user?.id ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUserId = session?.user?.id ?? null;
+      setViewerUserId(currentUserId => {
+        if (currentUserId && currentUserId !== nextUserId) {
+          clearStoredLetterResult();
+          reset();
+        }
+        if (!nextUserId) {
+          clearStoredLetterResult();
+          reset();
+        }
+        return nextUserId;
+      });
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [tool.id, reset]);
 
   useEffect(() => {
     if (tool.id !== 'letter') return;
-    if (!result) return;
-    localStorage.setItem('handleit_letter_result_v1', JSON.stringify(result));
-  }, [result, tool.id]);
+    const storedResult = readStoredLetterResult(viewerUserId);
+    if (storedResult) {
+      hydrate(storedResult);
+      return;
+    }
+    if (!viewerUserId) reset();
+  }, [tool.id, viewerUserId, hydrate, reset]);
+
+  useEffect(() => {
+    if (tool.id !== 'letter') return;
+    if (!viewerUserId || !result) {
+      if (!result) clearStoredLetterResult();
+      return;
+    }
+
+    const payload: StoredLetterResult = {
+      userId: viewerUserId,
+      savedAt: Date.now(),
+      result,
+    };
+
+    localStorage.setItem(LETTER_RESULT_CACHE_KEY, JSON.stringify(payload));
+    localStorage.removeItem(LEGACY_LETTER_RESULT_CACHE_KEY);
+  }, [result, tool.id, viewerUserId]);
 
   const handleSubmit = async () => {
     const hasText = input.trim().length > 0;

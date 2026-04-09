@@ -48,6 +48,8 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     const supabase = createClient();
+    localStorage.removeItem('handleit_letter_result_v1');
+    localStorage.removeItem('handleit_letter_result_v2');
     await supabase.auth.signOut();
     router.push('/');
   };
