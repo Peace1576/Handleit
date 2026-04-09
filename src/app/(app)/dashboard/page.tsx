@@ -6,8 +6,14 @@ import { createClient } from '@/lib/supabase/client';
 import { Particles } from '@/components/Particles';
 import { UsageBar } from '@/components/UsageBar';
 import { HandleItRobotLogo } from '@/components/Logo';
+import { trackGoogleAdsConversion } from '@/lib/googleAds';
 import { ClipboardList, Mail, MessageCircle, ArrowRight, Settings, History, LogOut, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+const GOOGLE_ADS_PURCHASE_CONVERSION_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_CONVERSION_ID ??
+  'AW-18072726819/DVhQCOqF1JgcEKPa36lD';
+const GOOGLE_ADS_PURCHASE_SESSION_KEY = 'handleit_google_ads_purchase_tracked';
 
 function DashboardContent() {
   const router = useRouter();
@@ -29,6 +35,20 @@ function DashboardContent() {
       const timeout = window.setTimeout(() => setShowUpgraded(false), 4000);
       return () => window.clearTimeout(timeout);
     }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get('upgraded') !== 'true') return;
+
+    const purchaseId = searchParams.get('purchase') ?? 'upgraded';
+    const trackedPurchaseId = sessionStorage.getItem(GOOGLE_ADS_PURCHASE_SESSION_KEY);
+    if (trackedPurchaseId === purchaseId) return;
+
+    trackGoogleAdsConversion({
+      sendTo: GOOGLE_ADS_PURCHASE_CONVERSION_ID,
+      transactionId: purchaseId,
+    });
+    sessionStorage.setItem(GOOGLE_ADS_PURCHASE_SESSION_KEY, purchaseId);
   }, [searchParams]);
 
   useEffect(() => {

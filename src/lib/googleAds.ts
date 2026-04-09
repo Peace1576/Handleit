@@ -13,6 +13,11 @@ type ReportConversionOptions = {
   timeoutMs?: number;
 };
 
+type TrackConversionOptions = {
+  sendTo: string;
+  transactionId?: string;
+};
+
 export function reportGoogleAdsConversion({
   sendTo,
   transactionId,
@@ -42,6 +47,25 @@ export function reportGoogleAdsConversion({
   const payload: Record<string, unknown> = {
     send_to: sendTo,
     event_callback: finish,
+  };
+
+  if (transactionId) {
+    payload.transaction_id = transactionId;
+  }
+
+  window.gtag('event', 'conversion', payload);
+}
+
+export function trackGoogleAdsConversion({
+  sendTo,
+  transactionId,
+}: TrackConversionOptions) {
+  if (typeof window === 'undefined' || typeof window.gtag !== 'function') {
+    return;
+  }
+
+  const payload: Record<string, unknown> = {
+    send_to: sendTo,
   };
 
   if (transactionId) {
