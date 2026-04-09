@@ -13,16 +13,16 @@ export function UsageBar() {
 
   if (plan === 'lifetime') {
     return (
-      <div style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(52,211,153,0.15)', color: '#34D399', border: '1px solid rgba(52,211,153,0.25)' }}>
-        ♾️ Lifetime
+      <div className="pill" style={{ background: 'rgba(51,208,165,0.12)', borderColor: 'rgba(51,208,165,0.22)', color: '#8ff2cf' }}>
+        Lifetime Access
       </div>
     );
   }
 
   if (plan === 'pro' || plan === 'basic') {
     return (
-      <div style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(52,211,153,0.15)', color: '#34D399', border: '1px solid rgba(52,211,153,0.25)' }}>
-        ⭐ {plan === 'pro' ? 'Pro' : 'Basic'}
+      <div className="pill" style={{ background: 'rgba(51,208,165,0.12)', borderColor: 'rgba(51,208,165,0.22)', color: '#8ff2cf' }}>
+        {plan === 'pro' ? 'Pro Plan' : 'Basic Plan'}
       </div>
     );
   }
@@ -39,14 +39,24 @@ export function UsageBar() {
   return (
     <button
       onClick={() => router.push('/pricing')}
-      style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px' }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        alignItems: 'flex-end',
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 16,
+        cursor: 'pointer',
+        padding: '9px 12px',
+        minWidth: 148,
+      }}
       title="Upgrade for unlimited uses"
     >
       <span style={{ fontSize: 11, fontWeight: 700, color: textColor, whiteSpace: 'nowrap' }}>
-        {isEmpty ? '🔒 Upgrade to continue' : `${remaining} of ${FREE_TOTAL} free uses left`}
+        {isEmpty ? 'Upgrade to continue' : `${remaining} of ${FREE_TOTAL} uses left`}
       </span>
-      {/* Progress bar */}
-      <div style={{ width: 80, height: 4, borderRadius: 99, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+      <div style={{ width: '100%', height: 6, borderRadius: 99, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${pct}%`, borderRadius: 99, background: barColor, transition: 'width 0.4s ease' }} />
       </div>
     </button>

@@ -6,11 +6,12 @@ import { createClient } from '@/lib/supabase/client';
 import { Particles } from '@/components/Particles';
 import { ResultDisplay } from '@/components/ResultDisplay';
 import type { SavedResult, ToolId } from '@/types';
+import { ArrowLeft, ClipboardList, Mail, MessageCircle } from 'lucide-react';
 
-const TOOL_META: Record<ToolId, { icon: string; name: string; color: string }> = {
-  form:   { icon: '📋', name: 'Form Explainer',  color: '#1A56DB' },
-  letter: { icon: '✉️', name: 'Complaint Letter', color: '#7C3AED' },
-  reply:  { icon: '💬', name: 'AI Reply',         color: '#059669' },
+const TOOL_META: Record<ToolId, { Icon: typeof ClipboardList; name: string; color: string }> = {
+  form: { Icon: ClipboardList, name: 'Form Explainer', color: '#58A6FF' },
+  letter: { Icon: Mail, name: 'Complaint Letter', color: '#8B7BFF' },
+  reply: { Icon: MessageCircle, name: 'AI Reply', color: '#33D0A5' },
 };
 
 export default function HistoryPage() {
@@ -33,51 +34,74 @@ export default function HistoryPage() {
   }, []);
 
   return (
-    <div className="ios-bg" style={{ minHeight: '100vh', overflowY: 'auto', position: 'relative' }}>
+    <div className="ios-bg" style={{ minHeight: '100vh', position: 'relative' }}>
       <Particles />
 
-      <div style={{ position: 'sticky', top: 16, zIndex: 40, padding: '0 16px', pointerEvents: 'none' }}>
-        <div className="nav-bubble specular relative rounded-2xl mx-auto flex items-center justify-between tab-bar-expanded" style={{ maxWidth: 680, pointerEvents: 'all' }}>
-          <button onClick={() => router.push('/dashboard')} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>← Dashboard</button>
-          <div style={{ fontWeight: 900, fontSize: 17, color: 'white' }}><span style={{ color: '#60A5FA' }}>Handle</span>It</div>
-          <div style={{ width: 60 }} />
-        </div>
-      </div>
+      <div className="page-wrap" style={{ padding: '24px 0 84px' }}>
+        <button className="ghost-btn" onClick={() => router.push('/dashboard')} style={{ marginBottom: 24 }}>
+          <ArrowLeft size={16} />
+          Dashboard
+        </button>
 
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 16px 80px' }}>
-        <h1 style={{ color: 'white', fontWeight: 900, fontSize: 28, letterSpacing: '-0.03em', marginBottom: 8 }}>Your History</h1>
-        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 14, marginBottom: 32 }}>Your last 50 results, saved automatically.</p>
+        <div style={{ marginBottom: 24 }}>
+          <div className="section-label" style={{ marginBottom: 10 }}>History</div>
+          <h1 style={{ fontSize: 'clamp(30px,4vw,42px)', marginBottom: 10 }}>Your recent results.</h1>
+          <p className="section-copy">The most recent 50 outputs are saved here automatically.</p>
+        </div>
 
         {loading && (
-          <div className="glass-card" style={{ borderRadius: 20, padding: 20 }}>
-            {[90, 70, 80].map((w, i) => <div key={i} className="shimmer-line" style={{ height: 12, width: `${w}%`, marginBottom: 10 }} />)}
+          <div className="surface-card" style={{ padding: 22 }}>
+            {[90, 74, 84].map((width, index) => (
+              <div key={index} className="shimmer-line" style={{ height: 12, width: `${width}%`, marginBottom: 12 }} />
+            ))}
           </div>
         )}
 
         {!loading && results.length === 0 && (
-          <div className="glass-card" style={{ borderRadius: 20, padding: 32, textAlign: 'center' }}>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 15 }}>No results yet. Use a tool to get started!</p>
-            <button onClick={() => router.push('/dashboard')} className="glass-btn-blue" style={{ marginTop: 20, padding: '10px 24px', borderRadius: 16, fontWeight: 700, fontSize: 13, color: 'white', border: 'none', cursor: 'pointer' }}>Go to Dashboard →</button>
+          <div className="surface-card" style={{ padding: 26, textAlign: 'center' }}>
+            <div style={{ color: 'white', fontWeight: 800, fontSize: 20, marginBottom: 10 }}>No results yet.</div>
+            <p className="section-copy" style={{ fontSize: 14, marginBottom: 18 }}>
+              Use one of the tools and your output will show up here.
+            </p>
+            <button className="primary-btn" onClick={() => router.push('/dashboard')}>Go to dashboard</button>
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {results.map(r => {
-            const meta = TOOL_META[r.tool_id];
-            const isOpen = expanded === r.id;
+        <div style={{ display: 'grid', gap: 14 }}>
+          {results.map(item => {
+            const meta = TOOL_META[item.tool_id];
+            const isOpen = expanded === item.id;
+            const Icon = meta.Icon;
+
             return (
-              <div key={r.id} className="glass-card relative overflow-hidden" style={{ borderRadius: 20, padding: 20, cursor: 'pointer' }} onClick={() => setExpanded(isOpen ? null : r.id)}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isOpen ? 16 : 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 20 }}>{meta.icon}</span>
+              <div key={item.id} className="surface-card" style={{ padding: 18 }}>
+                <button
+                  onClick={() => setExpanded(isOpen ? null : item.id)}
+                  style={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 14, background: `${meta.color}18`, border: `1px solid ${meta.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon size={18} color={meta.color} />
+                    </div>
                     <div>
-                      <div style={{ color: 'white', fontWeight: 700, fontSize: 13 }}>{meta.name}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>{new Date(r.created_at).toLocaleDateString()} · {r.input_text.slice(0, 50)}{r.input_text.length > 50 ? '…' : ''}</div>
+                      <div style={{ color: 'white', fontWeight: 800, fontSize: 15 }}>{meta.name}</div>
+                      <div style={{ color: 'rgba(232,241,255,0.42)', fontSize: 12, marginTop: 4 }}>
+                        {new Date(item.created_at).toLocaleString()}
+                      </div>
                     </div>
                   </div>
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
+                  <div style={{ color: 'rgba(232,241,255,0.46)', fontSize: 20 }}>{isOpen ? '−' : '+'}</div>
+                </button>
+
+                <div style={{ color: 'rgba(232,241,255,0.62)', fontSize: 13, lineHeight: 1.7, marginTop: 14 }}>
+                  {item.input_text.slice(0, 180)}{item.input_text.length > 180 ? '…' : ''}
                 </div>
-                {isOpen && <ResultDisplay result={r.result_text} color={meta.color} />}
+
+                {isOpen && (
+                  <div style={{ marginTop: 18 }}>
+                    <ResultDisplay result={item.result_text} color={meta.color} />
+                  </div>
+                )}
               </div>
             );
           })}

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Particles } from '@/components/Particles';
 import { UsageBar } from '@/components/UsageBar';
 import { HandleItRobotLogo } from '@/components/Logo';
-import { ClipboardList, Mail, MessageCircle } from 'lucide-react';
+import { ClipboardList, Mail, MessageCircle, ArrowRight, Settings, History, LogOut, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 function DashboardContent() {
@@ -18,24 +18,25 @@ function DashboardContent() {
   const { t } = useLanguage();
 
   const TOOLS = [
-    { id: 'form-explainer',   Icon: ClipboardList, name: t.formName,   desc: t.formDesc,   color: '#1A56DB', glow: 'rgba(26,86,219,0.5)' },
-    { id: 'complaint-letter', Icon: Mail,          name: t.letterName, desc: t.letterDesc, color: '#7C3AED', glow: 'rgba(124,58,237,0.5)' },
-    { id: 'ai-reply',         Icon: MessageCircle, name: t.replyName,  desc: t.replyDesc,  color: '#059669', glow: 'rgba(5,150,105,0.5)' },
+    { id: 'form-explainer', Icon: ClipboardList, name: t.formName, desc: t.formDesc, color: '#58A6FF', accent: 'Explain forms in plain English.' },
+    { id: 'complaint-letter', Icon: Mail, name: t.letterName, desc: t.letterDesc, color: '#8B7BFF', accent: 'Turn bad experiences into clean letters.' },
+    { id: 'ai-reply', Icon: MessageCircle, name: t.replyName, desc: t.replyDesc, color: '#33D0A5', accent: 'Get useful responses without overthinking.' },
   ];
 
   useEffect(() => {
     if (searchParams.get('upgraded') === 'true') {
       setShowUpgraded(true);
-      setTimeout(() => setShowUpgraded(false), 4000);
+      const timeout = window.setTimeout(() => setShowUpgraded(false), 4000);
+      return () => window.clearTimeout(timeout);
     }
   }, [searchParams]);
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const fn = () => setScrolled(el.scrollTop > 20);
-    el.addEventListener('scroll', fn);
-    return () => el.removeEventListener('scroll', fn);
+    const element = containerRef.current;
+    if (!element) return;
+    const onScroll = () => setScrolled(element.scrollTop > 20);
+    element.addEventListener('scroll', onScroll);
+    return () => element.removeEventListener('scroll', onScroll);
   }, []);
 
   const handleSignOut = async () => {
@@ -50,56 +51,96 @@ function DashboardContent() {
     <div ref={containerRef} className="ios-bg" style={{ minHeight: '100vh', overflowY: 'auto', position: 'relative' }}>
       <Particles />
 
-      {/* Floating nav */}
       <div style={{ position: 'sticky', top: 16, zIndex: 40, padding: '0 16px', pointerEvents: 'none' }}>
-        <div className={`nav-bubble specular relative rounded-2xl mx-auto flex items-center justify-between transition-all duration-300 ${scrolled ? 'tab-bar-compact' : 'tab-bar-expanded'}`}
-          style={{ maxWidth: 700, pointerEvents: 'all' }}>
-          <div style={{ fontWeight: 900, fontSize: 17, color: 'white', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <HandleItRobotLogo size={48} /><span><span style={{ color: '#60A5FA' }}>Handle</span>It</span>
+        <div
+          className={`nav-bubble specular page-wrap ${scrolled ? 'tab-bar-compact' : 'tab-bar-expanded'}`}
+          style={{ pointerEvents: 'all', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <HandleItRobotLogo size={46} />
+            <div style={{ fontSize: 18, fontWeight: 800 }}><span style={{ color: '#58A6FF' }}>Handle</span>It</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <UsageBar />
-            <button onClick={() => router.push('/history')} style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>{t.history}</button>
-            <button onClick={() => router.push('/settings')} style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>{t.settings}</button>
-            <button onClick={handleSignOut} style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>{t.signOut}</button>
+            <button className="secondary-btn" onClick={() => router.push('/history')}><History size={15} /> {t.history}</button>
+            <button className="secondary-btn" onClick={() => router.push('/settings')}><Settings size={15} /> {t.settings}</button>
+            <button className="secondary-btn" onClick={handleSignOut}><LogOut size={15} /> {t.signOut}</button>
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: '40px 16px 80px' }}>
+      <div className="page-wrap" style={{ padding: '40px 0 88px' }}>
         {showUpgraded && (
-          <div className="glass fade-up" style={{ borderRadius: 16, padding: '12px 20px', marginBottom: 24, background: 'rgba(52,211,153,0.15)', borderColor: 'rgba(52,211,153,0.3)', textAlign: 'center', color: '#34D399', fontWeight: 700, fontSize: 14 }}>
+          <div className="status-banner status-success fade-up" style={{ marginBottom: 20 }}>
             {t.dashUpgraded}
           </div>
         )}
 
-        <div className="fade-up" style={{ marginBottom: 40 }}>
-          <h1 style={{ color: 'white', fontWeight: 900, fontSize: 'clamp(28px,5vw,42px)', letterSpacing: '-0.03em', marginBottom: 8 }}>
-            {t.dashHeading} <span style={{ background: 'linear-gradient(135deg,#60A5FA,#C084FC)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{t.dashHandle}</span>
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }}>{t.dashSub}</p>
+        <div className="two-column fade-up" style={{ alignItems: 'center', gap: 28, marginBottom: 28 }}>
+          <div>
+            <div className="section-label" style={{ marginBottom: 10 }}>Workspace</div>
+            <h1 style={{ fontSize: 'clamp(30px,4vw,46px)', marginBottom: 12 }}>
+              {t.dashHeading} <span style={{ color: '#58A6FF' }}>{t.dashHandle}</span>
+            </h1>
+            <p className="section-copy" style={{ maxWidth: 560, marginBottom: 20 }}>
+              Choose the job you need done, paste the situation, and get a result you can actually use.
+            </p>
+            <div className="metric-row">
+              <div className="metric-pill">
+                <span className="metric-value">3 tools</span>
+                <span className="metric-label">ready to use</span>
+              </div>
+              <div className="metric-pill">
+                <span className="metric-value">Fast flow</span>
+                <span className="metric-label">describe, generate, copy</span>
+              </div>
+              <div className="metric-pill">
+                <span className="metric-value">Saved</span>
+                <span className="metric-label">history available in app</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="surface-card fade-up fade-up-delay-1" style={{ padding: 22 }}>
+            <div className="pill" style={{ marginBottom: 14 }}>
+              <Sparkles size={14} color="#58A6FF" />
+              Quick start
+            </div>
+            <div style={{ display: 'grid', gap: 12 }}>
+              {[
+                'Open the tool that matches your task',
+                'Paste the messy real-world input',
+                'Copy the finished output and move on',
+              ].map(step => (
+                <div key={step} style={{ display: 'flex', gap: 10, color: 'rgba(245,249,255,0.74)', fontSize: 14, lineHeight: 1.6 }}>
+                  <span style={{ width: 22, height: 22, borderRadius: 999, background: 'rgba(88,166,255,0.16)', border: '1px solid rgba(88,166,255,0.26)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#58A6FF', fontWeight: 800, fontSize: 12, flexShrink: 0 }}>•</span>
+                  <span>{step}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16 }}>
-          {TOOLS.map((tool, i) => (
+        <div className="auto-grid">
+          {TOOLS.map((tool, index) => (
             <div
               key={tool.id}
+              className={`tool-card fade-up fade-up-delay-${Math.min(index + 1, 3)}`}
               onClick={() => router.push(`/tools/${tool.id}`)}
-              className={`glass-card fade-up fade-up-delay-${i + 1} relative overflow-hidden`}
-              style={{ borderRadius: 24, padding: 24, cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.03)'; (e.currentTarget as HTMLElement).style.boxShadow = `0 20px 60px ${tool.glow}`; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLElement).style.boxShadow = ''; }}
+              style={{ cursor: 'pointer' }}
             >
-              <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: tool.glow, filter: 'blur(20px)', opacity: 0.7, pointerEvents: 'none' }} />
-              <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent)' }} />
-              <div style={{ marginBottom: 14, position: 'relative' }}>
-                <div style={{ width: 48, height: 48, borderRadius: 14, background: tool.color + '22', border: `1px solid ${tool.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <tool.Icon size={24} color={tool.color} strokeWidth={1.8} />
-                </div>
+              <div style={{ width: 50, height: 50, borderRadius: 16, background: `${tool.color}18`, border: `1px solid ${tool.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+                <tool.Icon size={22} color={tool.color} />
               </div>
-              <h3 style={{ fontWeight: 800, fontSize: 17, color: 'white', marginBottom: 8, position: 'relative' }}>{tool.name}</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, marginBottom: 16, position: 'relative' }}>{tool.desc}</p>
-              <div style={{ fontSize: 13, fontWeight: 700, color: tool.color, position: 'relative' }}>{t.dashOpen}</div>
+              <div className="section-label" style={{ color: tool.color, marginBottom: 8 }}>Tool</div>
+              <h3 style={{ fontSize: 22, marginBottom: 8 }}>{tool.name}</h3>
+              <p style={{ color: 'rgba(232,241,255,0.72)', fontSize: 14, lineHeight: 1.7, marginBottom: 10 }}>{tool.accent}</p>
+              <p style={{ color: 'rgba(232,241,255,0.48)', fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>{tool.desc}</p>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: tool.color, fontWeight: 800, fontSize: 13 }}>
+                {t.dashOpen}
+                <ArrowRight size={15} />
+              </div>
             </div>
           ))}
         </div>

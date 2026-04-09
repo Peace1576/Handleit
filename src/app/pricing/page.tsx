@@ -1,20 +1,54 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Particles } from '@/components/Particles';
 import { HandleItRobotLogo } from '@/components/Logo';
 import { createClient } from '@/lib/supabase/client';
 import { isLifetimeDealActive, lifetimeDaysLeft } from '@/lib/launch';
 import type { PaddlePlan } from '@/types';
+import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 
-// Paddle.js types
 declare global {
   interface Window {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Paddle?: any;
   }
 }
+
+const PLANS = [
+  {
+    id: 'free',
+    title: 'Free',
+    priceMonthly: '$0',
+    priceAnnual: '$0',
+    detailMonthly: '5 total uses',
+    detailAnnual: '5 total uses',
+    points: ['Try all 3 tools', 'No card required', 'Good for first-time testing'],
+    accent: '#58A6FF',
+  },
+  {
+    id: 'basic',
+    title: 'Basic',
+    priceMonthly: '$7',
+    priceAnnual: '$5',
+    detailMonthly: 'per month',
+    detailAnnual: 'billed $59 yearly',
+    points: ['50 uses each month', 'All tools included', 'Saved history'],
+    accent: '#33D0A5',
+  },
+  {
+    id: 'pro',
+    title: 'Pro',
+    priceMonthly: '$17',
+    priceAnnual: '$12',
+    detailMonthly: 'per month',
+    detailAnnual: 'billed $149 yearly',
+    points: ['Unlimited usage', 'Priority experience', 'Best for regular use'],
+    accent: '#8B7BFF',
+    featured: true,
+  },
+];
 
 export default function PricingPage() {
   const router = useRouter();
@@ -24,9 +58,12 @@ export default function PricingPage() {
   const lifetimeActive = isLifetimeDealActive();
   const daysLeft = lifetimeDaysLeft();
 
-  // Load Paddle.js and initialize
   useEffect(() => {
-    if (window.Paddle) { setPaddleReady(true); return; }
+    if (window.Paddle) {
+      setPaddleReady(true);
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = 'https://cdn.paddle.com/paddle/v2/paddle.js';
     script.async = true;
@@ -41,33 +78,32 @@ export default function PricingPage() {
 
   const handleCheckout = async (plan: PaddlePlan) => {
     if (!paddleReady || !window.Paddle) {
-      alert('Payment system is loading. Please try again in a second.');
+      alert('Payment system is still loading. Try again in a second.');
       return;
     }
 
     setLoading(plan);
 
-    // Get current user for customData
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push(`/login?redirectedFrom=/pricing`);
+      router.push('/login?redirectedFrom=/pricing');
       setLoading(null);
       return;
     }
 
     const priceIds: Record<PaddlePlan, string> = {
       basic_monthly: process.env.NEXT_PUBLIC_PADDLE_PRICE_BASIC_MONTHLY ?? '',
-      basic_annual:  process.env.NEXT_PUBLIC_PADDLE_PRICE_BASIC_ANNUAL  ?? '',
-      pro_monthly:   process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO_MONTHLY   ?? '',
-      pro_annual:    process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO_ANNUAL    ?? '',
-      lifetime:      process.env.NEXT_PUBLIC_PADDLE_PRICE_LIFETIME      ?? '',
+      basic_annual: process.env.NEXT_PUBLIC_PADDLE_PRICE_BASIC_ANNUAL ?? '',
+      pro_monthly: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO_MONTHLY ?? '',
+      pro_annual: process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO_ANNUAL ?? '',
+      lifetime: process.env.NEXT_PUBLIC_PADDLE_PRICE_LIFETIME ?? '',
     };
 
     const priceId = priceIds[plan];
     if (!priceId) {
-      alert('This plan is not configured yet. Please check back soon.');
+      alert('This plan is not configured yet.');
       setLoading(null);
       return;
     }
@@ -84,8 +120,8 @@ export default function PricingPage() {
           locale: localStorage.getItem('handleit_language') ?? 'en',
         },
       });
-    } catch (err) {
-      console.error('Paddle checkout error:', err);
+    } catch (error) {
+      console.error('Paddle checkout error:', error);
       alert('Could not open checkout. Please try again.');
     } finally {
       setLoading(null);
@@ -93,127 +129,167 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="ios-bg" style={{ minHeight: '100vh', overflowY: 'auto' }}>
+    <div className="ios-bg" style={{ minHeight: '100vh', position: 'relative' }}>
       <Particles />
 
       <div style={{ position: 'sticky', top: 16, zIndex: 40, padding: '0 16px', pointerEvents: 'none' }}>
-        <div className="nav-bubble specular relative rounded-2xl mx-auto flex items-center justify-between tab-bar-expanded" style={{ maxWidth: 600, pointerEvents: 'all' }}>
-          <button onClick={() => window.history.length > 1 ? router.back() : router.push('/dashboard')} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>← Back</button>
-          <div style={{ fontWeight: 900, fontSize: 17, color: 'white', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <HandleItRobotLogo size={48} /><span><span style={{ color: '#60A5FA' }}>Handle</span>It</span>
+        <div
+          className="nav-bubble specular page-wrap tab-bar-expanded"
+          style={{ pointerEvents: 'all', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
+        >
+          <button className="ghost-btn" onClick={() => window.history.length > 1 ? router.back() : router.push('/dashboard')}>Back</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'white', fontWeight: 800 }}>
+            <HandleItRobotLogo size={44} />
+            <span><span style={{ color: '#58A6FF' }}>Handle</span>It</span>
           </div>
-          <div style={{ width: 40 }} />
+          <div style={{ width: 52 }} />
         </div>
       </div>
 
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '32px 16px 80px' }}>
-        <div className="text-center fade-up" style={{ marginBottom: 40, textAlign: 'center' }}>
-          <h1 style={{ color: 'white', fontWeight: 900, fontSize: 36, letterSpacing: '-0.03em', marginBottom: 8 }}>Simple Pricing</h1>
-          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 15 }}>One refund pays for years of Pro.</p>
-        </div>
-
-        {/* Monthly/Annual toggle */}
-        <div className="fade-up fade-up-delay-1" style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
-          <div className="glass-pill" style={{ display: 'inline-flex', borderRadius: 20, padding: 4, gap: 4 }}>
-            {['Monthly', 'Annual'].map((l, i) => (
-              <button key={l} onClick={() => setAnnual(i === 1)}
-                style={{ padding: '8px 20px', borderRadius: 16, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', background: annual === (i === 1) ? 'rgba(26,86,219,0.8)' : 'transparent', color: annual === (i === 1) ? 'white' : 'rgba(255,255,255,0.4)', border: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-                {l}
-                {i === 1 && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: 'rgba(52,211,153,0.25)', color: '#34D399', fontWeight: 700 }}>-27%</span>}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Free */}
-          <div className="glass-card fade-up fade-up-delay-1 relative overflow-hidden" style={{ borderRadius: 24, padding: 24 }}>
-            <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)' }} />
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>FREE</div>
-            <div style={{ fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: '-0.04em', marginBottom: 2 }}>$0</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>forever</div>
-            {['5 total uses (all tools)', 'No credit card required', 'Try all 3 tools'].map(f => (
-              <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}><span style={{ color: '#34D399', fontWeight: 700 }}>✓</span>{f}</div>
-            ))}
-            <button onClick={() => router.push('/dashboard')} className="glass-btn w-full rounded-2xl" style={{ marginTop: 20, padding: '14px', fontWeight: 700, fontSize: 14, color: 'rgba(255,255,255,0.8)', border: 'none', cursor: 'pointer', width: '100%', borderRadius: 16 }}>
-              Start Free
-            </button>
-          </div>
-
-          {/* Basic */}
-          <div className="glass-card fade-up fade-up-delay-2 relative overflow-hidden" style={{ borderRadius: 24, padding: 24, border: '1px solid rgba(16,185,129,0.3)' }}>
-            <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(52,211,153,0.5),transparent)' }} />
-            <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'rgba(5,150,105,0.25)', filter: 'blur(30px)', pointerEvents: 'none' }} />
-            <div style={{ position: 'relative' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#34D399', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>BASIC</div>
-              <div style={{ fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: '-0.04em', marginBottom: 2 }}>{annual ? '$5' : '$7'}</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{annual ? 'billed $59/year' : 'per month'}</div>
-              {['50 uses per month', 'All 3 tools', 'Save results history', 'Cancel anytime'].map(f => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'rgba(255,255,255,0.65)' }}><span style={{ color: '#34D399', fontWeight: 700 }}>✓</span>{f}</div>
-              ))}
-              <button
-                onClick={() => handleCheckout(annual ? 'basic_annual' : 'basic_monthly')}
-                disabled={loading !== null}
-                style={{ marginTop: 20, padding: '14px', fontWeight: 800, fontSize: 14, color: 'white', border: '1px solid rgba(52,211,153,0.4)', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: 16, width: '100%', background: 'rgba(5,150,105,0.4)', backdropFilter: 'blur(20px)', transition: 'all 0.2s', opacity: loading ? 0.7 : 1 }}
-              >
-                {loading === 'basic_monthly' || loading === 'basic_annual' ? 'Opening checkout…' : 'Start Basic →'}
-              </button>
+      <div className="page-wrap" style={{ padding: '40px 0 88px' }}>
+        <div className="two-column fade-up" style={{ alignItems: 'start', gap: 28, marginBottom: 32 }}>
+          <div>
+            <div className="section-label" style={{ marginBottom: 10 }}>Pricing</div>
+            <h1 style={{ fontSize: 'clamp(30px,4vw,48px)', marginBottom: 12 }}>Simple plans, clear limits, no weird pricing tricks.</h1>
+            <p className="section-copy" style={{ maxWidth: 540, marginBottom: 20 }}>
+              Start with free usage, then upgrade only if HandleIt is actually saving you time.
+            </p>
+            <div className="metric-row">
+              <div className="metric-pill">
+                <span className="metric-value">5 free</span>
+                <span className="metric-label">uses included</span>
+              </div>
+              <div className="metric-pill">
+                <span className="metric-value">3 tools</span>
+                <span className="metric-label">in every paid plan</span>
+              </div>
+              {lifetimeActive && (
+                <div className="metric-pill">
+                  <span className="metric-value">{daysLeft} days</span>
+                  <span className="metric-label">left on lifetime</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Pro */}
-          <div className="fade-up fade-up-delay-2 relative overflow-hidden" style={{ borderRadius: 24, padding: 24, background: 'linear-gradient(135deg,rgba(26,86,219,0.55),rgba(124,58,237,0.45))', backdropFilter: 'blur(40px)', border: '1px solid rgba(100,150,255,0.3)', boxShadow: '0 20px 60px rgba(26,86,219,0.35),inset 0 1px 0 rgba(255,255,255,0.25)' }}>
-            <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.7),transparent)' }} />
-            <div style={{ position: 'absolute', top: -4, right: 20, padding: '4px 12px', borderRadius: 12, background: 'rgba(124,58,237,0.8)', fontSize: 10, fontWeight: 800, color: 'white', letterSpacing: '0.08em', textTransform: 'uppercase', border: '1px solid rgba(167,139,250,0.4)' }}>⭐ Most Popular</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>PRO</div>
-            <div style={{ fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: '-0.04em', marginBottom: 2 }}>{annual ? '$12' : '$17'}</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 20 }}>{annual ? 'billed $149/year' : 'per month'}</div>
-            {['Unlimited uses, all tools', 'No watermarks', 'Save results history', 'Priority AI (faster)', 'Cancel anytime'].map(f => (
-              <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'rgba(255,255,255,0.85)' }}><span style={{ color: '#93C5FD', fontWeight: 700 }}>✓</span>{f}</div>
-            ))}
-            <button
-              onClick={() => handleCheckout(annual ? 'pro_annual' : 'pro_monthly')}
-              disabled={loading !== null}
-              className="glass-btn-blue w-full rounded-2xl"
-              style={{ marginTop: 20, padding: '15px', fontWeight: 800, fontSize: 15, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: 16, width: '100%', opacity: loading ? 0.7 : 1 }}
-            >
-              {loading === 'pro_monthly' || loading === 'pro_annual' ? 'Opening checkout…' : 'Start Pro →'}
-            </button>
-          </div>
-
-          {/* Lifetime — only shown during the 90-day launch window */}
-          {lifetimeActive && (
-            <div className="glass-card fade-up fade-up-delay-3 relative overflow-hidden" style={{ borderRadius: 24, padding: 24, border: '1px solid rgba(124,58,237,0.4)' }}>
-              <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(167,139,250,0.6),transparent)' }} />
-              <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'rgba(124,58,237,0.3)', filter: 'blur(30px)', pointerEvents: 'none' }} />
-              <div style={{ position: 'relative' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#A78BFA', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>LIFETIME</div>
-                <div style={{ fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: '-0.04em', marginBottom: 2 }}>$97</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>one-time payment</div>
-                {['Everything in Pro', 'Pay once, use forever', 'All future features', 'Early adopter badge'].map(f => (
-                  <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}><span style={{ color: '#A78BFA', fontWeight: 700 }}>✓</span>{f}</div>
-                ))}
-                <button
-                  onClick={() => handleCheckout('lifetime')}
-                  disabled={loading !== null}
-                  className="glass-btn-purple w-full rounded-2xl"
-                  style={{ marginTop: 20, padding: '14px', fontWeight: 800, fontSize: 14, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: 16, width: '100%', opacity: loading ? 0.7 : 1 }}
-                >
-                  {loading === 'lifetime' ? 'Opening checkout…' : 'Get Lifetime Deal →'}
-                </button>
-                <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>
-                  ⏰ {daysLeft} day{daysLeft !== 1 ? 's' : ''} left — then gone forever
-                </p>
+          <div className="surface-card fade-up fade-up-delay-1" style={{ padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+              <div style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>Choose billing</div>
+              <div className="pill" style={{ background: annual ? 'rgba(88,166,255,0.12)' : 'rgba(255,255,255,0.05)' }}>
+                {annual ? 'Annual pricing active' : 'Monthly pricing active'}
               </div>
             </div>
-          )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <button
+                className={annual ? 'secondary-btn' : 'primary-btn'}
+                onClick={() => setAnnual(false)}
+                style={{ width: '100%' }}
+              >
+                Monthly
+              </button>
+              <button
+                className={annual ? 'primary-btn' : 'secondary-btn'}
+                onClick={() => setAnnual(true)}
+                style={{ width: '100%' }}
+              >
+                Annual
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Paddle badge */}
-        <div style={{ textAlign: 'center', marginTop: 24 }}>
-          <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>
-            Payments securely processed by Paddle · Taxes handled automatically
-          </p>
+        <div className="auto-grid">
+          {PLANS.map((plan, index) => (
+            <div
+              key={plan.id}
+              className={`tool-card fade-up fade-up-delay-${Math.min(index + 1, 3)}`}
+              style={{
+                borderColor: plan.featured ? `${plan.accent}55` : undefined,
+                boxShadow: plan.featured ? `0 24px 64px ${plan.accent}20` : undefined,
+              }}
+            >
+              {plan.featured && (
+                <div className="pill" style={{ marginBottom: 16, color: 'white', background: `${plan.accent}20`, borderColor: `${plan.accent}45` }}>
+                  Most popular
+                </div>
+              )}
+              <div className="section-label" style={{ color: plan.accent, marginBottom: 10 }}>{plan.title}</div>
+              <div style={{ fontSize: 42, fontWeight: 800, color: 'white', marginBottom: 6 }}>
+                {annual ? plan.priceAnnual : plan.priceMonthly}
+              </div>
+              <div style={{ color: 'rgba(232,241,255,0.48)', fontSize: 13, marginBottom: 18 }}>
+                {annual ? plan.detailAnnual : plan.detailMonthly}
+              </div>
+
+              <div style={{ display: 'grid', gap: 10, marginBottom: 22 }}>
+                {plan.points.map(point => (
+                  <div key={point} style={{ display: 'flex', gap: 10, color: 'rgba(245,249,255,0.76)', fontSize: 14, lineHeight: 1.6 }}>
+                    <CheckCircle2 size={16} color={plan.accent} style={{ flexShrink: 0, marginTop: 3 }} />
+                    <span>{point}</span>
+                  </div>
+                ))}
+              </div>
+
+              {plan.id === 'free' ? (
+                <button className="secondary-btn" style={{ width: '100%' }} onClick={() => router.push('/dashboard')}>
+                  Start free
+                </button>
+              ) : (
+                <button
+                  className={plan.featured ? 'primary-btn' : 'secondary-btn'}
+                  style={{ width: '100%' }}
+                  disabled={loading !== null}
+                  onClick={() => handleCheckout(
+                    plan.id === 'basic'
+                      ? (annual ? 'basic_annual' : 'basic_monthly')
+                      : (annual ? 'pro_annual' : 'pro_monthly')
+                  )}
+                >
+                  {loading === `${plan.id}_${annual ? 'annual' : 'monthly'}`
+                    ? 'Opening checkout...'
+                    : <>
+                        Choose {plan.title}
+                        <ArrowRight size={16} />
+                      </>}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {lifetimeActive && (
+          <div className="surface-card fade-up" style={{ marginTop: 22, padding: 24 }}>
+            <div className="two-column" style={{ alignItems: 'center', gap: 18 }}>
+              <div>
+                <div className="pill" style={{ marginBottom: 12, color: '#d7cbff', background: 'rgba(139,123,255,0.16)', borderColor: 'rgba(139,123,255,0.3)' }}>
+                  <Sparkles size={14} color="#8B7BFF" />
+                  Lifetime launch offer
+                </div>
+                <h2 style={{ fontSize: 26, marginBottom: 8 }}>Pay once, keep HandleIt forever.</h2>
+                <p className="section-copy">
+                  Includes everything in Pro plus future product improvements. Available for a limited window.
+                </p>
+              </div>
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div style={{ fontSize: 40, fontWeight: 800, color: 'white' }}>$97</div>
+                <div style={{ color: 'rgba(232,241,255,0.5)', fontSize: 13 }}>
+                  One-time payment · {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
+                </div>
+                <button
+                  className="glass-btn-purple"
+                  disabled={loading !== null}
+                  onClick={() => handleCheckout('lifetime')}
+                >
+                  {loading === 'lifetime' ? 'Opening checkout...' : 'Get lifetime access'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ textAlign: 'center', marginTop: 24, color: 'rgba(232,241,255,0.36)', fontSize: 12 }}>
+          Secure checkout by Paddle. Taxes and receipts handled automatically.
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ import { ResultDisplay } from './ResultDisplay';
 import { UsageBar } from './UsageBar';
 import { Particles } from './Particles';
 import { createClient } from '@/lib/supabase/client';
-import { ClipboardList, Mail, MessageCircle, Upload, X, FileText, ImageIcon } from 'lucide-react';
+import { ClipboardList, Mail, MessageCircle, Upload, X, FileText, ImageIcon, ArrowRight, RotateCcw } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { GeneratedResult, ToolId } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -20,17 +20,6 @@ const TOOL_ICONS: Record<ToolId, LucideIcon> = {
   letter: Mail,
   reply: MessageCircle,
 };
-
-interface ToolConfig {
-  id: ToolId;
-  name: string;
-  desc: string;
-  color: string;
-  glow: string;
-  placeholder: string;
-  companyTypes?: string[];
-  allowFileUpload?: boolean;
-}
 
 const ACCEPTED_TYPES: Record<string, string> = {
   'application/pdf': 'PDF',
@@ -44,6 +33,7 @@ const ACCEPTED_TYPES: Record<string, string> = {
   'application/msword': 'DOC',
   'text/plain': 'TXT',
 };
+
 const ACCEPTED_EXTENSIONS = '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.docx,.doc,.txt';
 const MAX_FILE_MB = 20;
 const LETTER_RESULT_CACHE_KEY = 'handleit_letter_result_v2';
@@ -54,6 +44,21 @@ interface StoredLetterResult {
   userId: string;
   savedAt: number;
   result: GeneratedResult;
+}
+
+interface ToolConfig {
+  id: ToolId;
+  name: string;
+  desc: string;
+  color: string;
+  glow: string;
+  placeholder: string;
+  companyTypes?: string[];
+  allowFileUpload?: boolean;
+}
+
+interface Props {
+  tool: ToolConfig;
 }
 
 function clearStoredLetterResult() {
@@ -67,16 +72,14 @@ function readStoredLetterResult(userId: string | null): GeneratedResult | null {
     return null;
   }
 
-  // Drop the old cache shape so stale complaint letters stop reappearing.
   localStorage.removeItem(LEGACY_LETTER_RESULT_CACHE_KEY);
-
   const raw = localStorage.getItem(LETTER_RESULT_CACHE_KEY);
   if (!raw) return null;
 
   try {
     const parsed = JSON.parse(raw) as Partial<StoredLetterResult>;
-    const isExpired = typeof parsed.savedAt !== 'number' || Date.now() - parsed.savedAt > LETTER_RESULT_CACHE_TTL_MS;
     const cachedResult = parsed.result;
+    const isExpired = typeof parsed.savedAt !== 'number' || Date.now() - parsed.savedAt > LETTER_RESULT_CACHE_TTL_MS;
     const hasValidResult = !!cachedResult && typeof cachedResult.text === 'string';
 
     if (parsed.userId !== userId || isExpired || !hasValidResult) {
@@ -89,10 +92,6 @@ function readStoredLetterResult(userId: string | null): GeneratedResult | null {
     clearStoredLetterResult();
     return null;
   }
-}
-
-interface Props {
-  tool: ToolConfig;
 }
 
 export function ToolPage({ tool }: Props) {
@@ -119,7 +118,6 @@ export function ToolPage({ tool }: Props) {
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = reader.result as string;
-        // Strip the data:mime/type;base64, prefix — Gemini wants raw base64
         resolve(dataUrl.split(',')[1]);
       };
       reader.onerror = reject;
@@ -129,30 +127,31 @@ export function ToolPage({ tool }: Props) {
   const handleFile = useCallback(async (file: File) => {
     setFileError(null);
 
-    // Determine MIME — browsers sometimes return '' for PDFs on Windows, so fall back to extension
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-    const EXT_TO_MIME: Record<string, string> = {
-      pdf:  'application/pdf',
-      jpg:  'image/jpeg',
+    const extToMime: Record<string, string> = {
+      pdf: 'application/pdf',
+      jpg: 'image/jpeg',
       jpeg: 'image/jpeg',
-      png:  'image/png',
+      png: 'image/png',
       webp: 'image/webp',
       heic: 'image/heic',
       heif: 'image/heif',
       docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      doc:  'application/msword',
-      txt:  'text/plain',
+      doc: 'application/msword',
+      txt: 'text/plain',
     };
-    const mime = (file.type && ACCEPTED_TYPES[file.type]) ? file.type : (EXT_TO_MIME[ext] ?? '');
 
+    const mime = (file.type && ACCEPTED_TYPES[file.type]) ? file.type : (extToMime[ext] ?? '');
     if (!mime || !ACCEPTED_TYPES[mime]) {
-      setFileError('Unsupported file type. Please upload a PDF, JPG, PNG, or WEBP.');
+      setFileError('Unsupported file type. Please upload PDF, image, Word, or TXT.');
       return;
     }
+
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
       setFileError(`File is too large. Max size is ${MAX_FILE_MB} MB.`);
       return;
     }
+
     try {
       const base64 = await readFileAsBase64(file);
       setUploadedFile(file);
@@ -171,6 +170,11 @@ export function ToolPage({ tool }: Props) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const clearCurrentResult = useCallback(() => {
+    reset();
+    if (tool.id === 'letter') clearStoredLetterResult();
+  }, [reset, tool.id]);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -178,15 +182,12 @@ export function ToolPage({ tool }: Props) {
     if (file) handleFile(file);
   }, [handleFile]);
 
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = () => setIsDragging(false);
-
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const fn = () => setScrolled(el.scrollTop > 20);
-    el.addEventListener('scroll', fn);
-    return () => el.removeEventListener('scroll', fn);
+    const element = containerRef.current;
+    if (!element) return;
+    const onScroll = () => setScrolled(element.scrollTop > 20);
+    element.addEventListener('scroll', onScroll);
+    return () => element.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -253,180 +254,203 @@ export function ToolPage({ tool }: Props) {
     const hasText = input.trim().length > 0;
     const hasFile = !!fileData;
     if (!hasText && !hasFile) return;
+
     await generate({
       tool_id: tool.id,
       input_text: input,
       company_type: tool.id === 'letter' ? company : undefined,
       ...(hasFile ? { file_data: fileData!, file_mime_type: fileMime! } : {}),
     });
-    // Refresh usage count after each generation
     refreshUsage();
   };
 
   const canSubmit = !loading && (input.trim().length > 0 || !!fileData);
+  const Icon = TOOL_ICONS[tool.id];
 
   return (
     <div ref={containerRef} className="ios-bg" style={{ minHeight: '100vh', overflowY: 'auto', position: 'relative' }}>
       <Particles />
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
 
-      {/* Floating header */}
       <div style={{ position: 'sticky', top: 16, zIndex: 40, padding: '0 16px', pointerEvents: 'none' }}>
-        <div className={`nav-bubble specular relative rounded-2xl mx-auto flex items-center justify-between transition-all duration-300 ${scrolled ? 'tab-bar-compact' : 'tab-bar-expanded'}`}
-          style={{ maxWidth: 560, pointerEvents: 'all' }}>
-          <button onClick={() => router.push('/dashboard')} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
-            {t.backToDashboard}
-          </button>
-          <div style={{ fontWeight: 900, fontSize: 17, color: 'white', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <HandleItRobotLogo size={48} /><span><span style={{ color: '#60A5FA' }}>Handle</span>It</span>
+        <div
+          className={`nav-bubble specular page-wrap ${scrolled ? 'tab-bar-compact' : 'tab-bar-expanded'}`}
+          style={{ pointerEvents: 'all', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
+        >
+          <button className="ghost-btn" onClick={() => router.push('/dashboard')}>{t.backToDashboard}</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'white', fontWeight: 800 }}>
+            <HandleItRobotLogo size={44} />
+            <span><span style={{ color: '#58A6FF' }}>Handle</span>It</span>
           </div>
           <UsageBar />
         </div>
       </div>
 
-      <div style={{ maxWidth: 560, margin: '0 auto', padding: '16px 16px 80px' }}>
-        {/* Tool card */}
-        <div className="glass-card fade-up relative overflow-hidden" style={{ borderRadius: 28, padding: 24, marginBottom: 16 }}>
-          <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', background: tool.glow, filter: 'blur(40px)', opacity: 0.6, pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent)' }} />
+      <div className="page-wrap" style={{ padding: '34px 0 88px' }}>
+        <div className="two-column fade-up" style={{ alignItems: 'start', gap: 24, marginBottom: 18 }}>
+          <div>
+            <div className="section-label" style={{ marginBottom: 10 }}>{tool.name}</div>
+            <h1 style={{ fontSize: 'clamp(30px,4vw,44px)', marginBottom: 12 }}>{tool.name}</h1>
+            <p className="section-copy" style={{ maxWidth: 560 }}>{tool.desc}</p>
+          </div>
 
-          <div style={{ position: 'relative' }}>
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ width: 52, height: 52, borderRadius: 16, background: tool.color + '22', border: `1px solid ${tool.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {(() => { const Icon = TOOL_ICONS[tool.id]; return <Icon size={26} color={tool.color} strokeWidth={1.8} />; })()}
+          <div className="surface-card fade-up fade-up-delay-1" style={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 50, height: 50, borderRadius: 16, background: `${tool.color}18`, border: `1px solid ${tool.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon size={22} color={tool.color} />
+              </div>
+              <div>
+                <div style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>{tool.name}</div>
+                <div style={{ color: 'rgba(232,241,255,0.5)', fontSize: 13 }}>
+                  {tool.id === 'letter' ? 'Best for refunds, complaints, and service issues.' : tool.id === 'form' ? 'Best for tax, legal, and admin forms.' : 'Best for stressful texts and emails.'}
+                </div>
               </div>
             </div>
-            <h2 style={{ color: 'white', fontWeight: 800, fontSize: 20, marginBottom: 4, letterSpacing: '-0.02em' }}>{tool.name}</h2>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginBottom: 20, lineHeight: 1.6 }}>{tool.desc}</p>
-
-            {tool.id === 'letter' && tool.companyTypes && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>{t.companyType}</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {tool.companyTypes.map(c => (
-                    <button key={c} onClick={() => setCompany(c)}
-                      style={{ padding: '6px 14px', borderRadius: 16, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', background: company === c ? tool.color + 'cc' : 'rgba(255,255,255,0.08)', color: company === c ? 'white' : 'rgba(255,255,255,0.5)', border: `1px solid ${company === c ? tool.color + '80' : 'rgba(255,255,255,0.1)'}`, backdropFilter: 'blur(10px)' }}>
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* File upload zone — only on tools with allowFileUpload */}
-            {tool.allowFileUpload && (
-              <div style={{ marginBottom: 14 }}>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={ACCEPTED_EXTENSIONS}
-                  style={{ display: 'none' }}
-                  onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-                />
-
-                {uploadedFile ? (
-                  /* File preview chip */
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 14, background: tool.color + '18', border: `1px solid ${tool.color}40` }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: tool.color + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {fileMime?.startsWith('image/') ? <ImageIcon size={18} color={tool.color} /> : <FileText size={18} color={tool.color} />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ color: 'white', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{uploadedFile.name}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2 }}>{(uploadedFile.size / 1024).toFixed(0)} KB · {ACCEPTED_TYPES[fileMime ?? ''] ?? 'File'}</div>
-                    </div>
-                    <button onClick={clearFile} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <X size={14} color="rgba(255,255,255,0.6)" />
-                    </button>
-                  </div>
-                ) : (
-                  /* Drop zone */
-                  <div
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{
-                      border: `2px dashed ${isDragging ? tool.color : 'rgba(255,255,255,0.15)'}`,
-                      borderRadius: 14,
-                      padding: '20px 16px',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      background: isDragging ? tool.color + '10' : 'rgba(255,255,255,0.03)',
-                    }}
-                  >
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: tool.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                      <Upload size={20} color={tool.color} />
-                    </div>
-                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
-                      {t.dropzoneTitle} <span style={{ color: tool.color }}>{t.dropzoneBrowse}</span>
-                    </div>
-                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>{t.dropzoneFormats}</div>
-                  </div>
-                )}
-
-                {fileError && <p style={{ color: '#F87171', fontSize: 12, marginTop: 6, marginBottom: 0 }}>{fileError}</p>}
-
-                {/* Divider */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0 0' }}>
-                  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                  <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, fontWeight: 600 }}>{t.orType}</span>
-                  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                </div>
-              </div>
-            )}
-
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder={uploadedFile ? t.addNotes : tool.placeholder}
-              rows={uploadedFile ? 3 : 6}
-              className="glass-input w-full rounded-2xl"
-              style={{ padding: '16px', fontSize: 14, lineHeight: 1.7, resize: 'none', width: '100%', fontFamily: 'inherit', borderRadius: 16 }}
-            />
-
-            <button
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className={`w-full rounded-2xl font-bold text-white mt-3 ${canSubmit ? 'glass-btn-blue' : ''}`}
-              style={{ padding: '16px', fontSize: 15, fontWeight: 800, border: 'none', cursor: !canSubmit ? 'not-allowed' : 'pointer', background: !canSubmit ? 'rgba(255,255,255,0.08)' : '', color: !canSubmit ? 'rgba(255,255,255,0.3)' : 'white', borderRadius: 16 }}
-            >
-              {loading ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><span className="spin">◌</span> {t.working}</span> : t.submitBtn}
-            </button>
-
-            {error && <p style={{ color: '#F87171', fontSize: 13, marginTop: 8, textAlign: 'center' }}>{error}</p>}
+            <div style={{ color: 'rgba(232,241,255,0.64)', fontSize: 14, lineHeight: 1.7 }}>
+              Paste your situation in plain English. The app is designed to do the structured formatting for you.
+            </div>
           </div>
         </div>
 
-        {/* Loading shimmer */}
+        <div className="surface-card fade-up fade-up-delay-1" style={{ padding: 24, marginBottom: 18 }}>
+          {tool.id === 'letter' && tool.companyTypes && (
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-label" style={{ marginBottom: 12 }}>Company type</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {tool.companyTypes.map(type => {
+                  const selected = company === type;
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => setCompany(type)}
+                      style={{
+                        padding: '9px 14px',
+                        borderRadius: 999,
+                        border: `1px solid ${selected ? `${tool.color}55` : 'rgba(255,255,255,0.08)'}`,
+                        background: selected ? `${tool.color}18` : 'rgba(255,255,255,0.04)',
+                        color: selected ? 'white' : 'rgba(232,241,255,0.58)',
+                        fontWeight: 700,
+                        fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {type}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {tool.allowFileUpload && (
+            <div style={{ marginBottom: 18 }}>
+              <div className="section-label" style={{ marginBottom: 12 }}>Optional file</div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_EXTENSIONS}
+                style={{ display: 'none' }}
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFile(file);
+                }}
+              />
+
+              {uploadedFile ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 14, background: `${tool.color}18`, border: `1px solid ${tool.color}28`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {fileMime?.startsWith('image/') ? <ImageIcon size={18} color={tool.color} /> : <FileText size={18} color={tool.color} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: 'white', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{uploadedFile.name}</div>
+                    <div style={{ color: 'rgba(232,241,255,0.42)', fontSize: 12, marginTop: 4 }}>
+                      {(uploadedFile.size / 1024).toFixed(0)} KB · {ACCEPTED_TYPES[fileMime ?? ''] ?? 'File'}
+                    </div>
+                  </div>
+                  <button className="secondary-btn" onClick={clearFile}><X size={14} /></button>
+                </div>
+              ) : (
+                <button
+                  onDrop={handleDrop}
+                  onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    width: '100%',
+                    padding: '22px 18px',
+                    borderRadius: 20,
+                    border: `1px dashed ${isDragging ? `${tool.color}88` : 'rgba(160,186,215,0.18)'}`,
+                    background: isDragging ? `${tool.color}12` : 'rgba(255,255,255,0.03)',
+                    color: 'rgba(232,241,255,0.62)',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ width: 42, height: 42, borderRadius: 14, background: `${tool.color}18`, border: `1px solid ${tool.color}28`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                    <Upload size={18} color={tool.color} />
+                  </div>
+                  <div style={{ color: 'white', fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
+                    Drop a file here or click to browse
+                  </div>
+                  <div style={{ color: 'rgba(232,241,255,0.42)', fontSize: 12 }}>
+                    PDF, Word, TXT, JPG, PNG · max {MAX_FILE_MB} MB
+                  </div>
+                </button>
+              )}
+
+              {fileError && <div className="status-banner status-error" style={{ marginTop: 10 }}>{fileError}</div>}
+            </div>
+          )}
+
+          <div className="section-label" style={{ marginBottom: 12 }}>Describe the situation</div>
+          <textarea
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder={uploadedFile ? t.addNotes : tool.placeholder}
+            rows={uploadedFile ? 4 : 7}
+            className="text-area"
+            style={{ resize: 'vertical', minHeight: uploadedFile ? 128 : 180, marginBottom: 16 }}
+          />
+
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button className="primary-btn" onClick={handleSubmit} disabled={!canSubmit}>
+              {loading ? <><span className="spin">◌</span> {t.working}</> : <>{t.submitBtn} <ArrowRight size={16} /></>}
+            </button>
+
+            {(result || input || uploadedFile) && (
+              <button className="secondary-btn" onClick={() => { setInput(''); clearFile(); clearCurrentResult(); }}>
+                <RotateCcw size={16} />
+                Clear
+              </button>
+            )}
+          </div>
+
+          {error && <div className="status-banner status-error" style={{ marginTop: 14 }}>{error}</div>}
+        </div>
+
         {loading && (
-          <div className="glass-card" style={{ borderRadius: 24, padding: 20, marginBottom: 16 }}>
-            {[80, 60, 90, 50, 70].map((w, i) => (
-              <div key={i} className="shimmer-line" style={{ height: 12, width: `${w}%`, marginBottom: 10 }} />
+          <div className="surface-card fade-up" style={{ padding: 22, marginBottom: 18 }}>
+            {[90, 78, 66, 85].map((width, index) => (
+              <div key={index} className="shimmer-line" style={{ height: 12, width: `${width}%`, marginBottom: 12 }} />
             ))}
           </div>
         )}
 
-        {/* Result */}
         {result && !loading && (
           <>
             <ResultDisplay result={result} color={tool.color} toolId={tool.id} />
-            {/* Usage nudge for free users after they see their result */}
             {plan === 'free' && typeof uses_remaining === 'number' && (
-              <div className="glass" style={{ borderRadius: 18, padding: '14px 18px', marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, color: uses_remaining <= 1 ? '#FBBF24' : 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
-                  {uses_remaining <= 0
-                    ? '🔒 You\'ve used all your free uses'
-                    : uses_remaining === 1
-                    ? '⚡ Last free use remaining!'
-                    : `✓ ${uses_remaining} of 5 free uses left`}
-                </span>
-                <button
-                  onClick={() => router.push('/pricing')}
-                  style={{ padding: '7px 16px', borderRadius: 14, fontSize: 12, fontWeight: 700, background: 'rgba(26,86,219,0.8)', color: 'white', border: '1px solid rgba(100,150,255,0.4)', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
-                >
-                  Upgrade →
-                </button>
+              <div className="surface-card" style={{ padding: 18, marginTop: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ color: uses_remaining <= 1 ? '#F4B860' : 'rgba(232,241,255,0.72)', fontWeight: 700, fontSize: 14 }}>
+                    {uses_remaining <= 0
+                      ? 'You have used all free uses.'
+                      : uses_remaining === 1
+                      ? '1 free use left.'
+                      : `${uses_remaining} free uses left.`}
+                  </span>
+                  <button className="secondary-btn" onClick={() => router.push('/pricing')}>Upgrade</button>
+                </div>
               </div>
             )}
           </>
