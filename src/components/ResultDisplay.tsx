@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatCopy } from '@/lib/formatCopy';
+import { GMAIL_INTEGRATION_ENABLED } from '@/lib/features';
 import type { GeneratedResult } from '@/types';
 import { Copy, Download, Mail, Link2, Save, Unplug } from 'lucide-react';
 
@@ -17,10 +18,12 @@ export function ResultDisplay({ result, color, toolId }: Props) {
   const displayText = typeof result === 'string' ? result : result.text;
   const complaintDraft = typeof result === 'string' ? null : (result.complaintDraft ?? null);
   const hasComplaintDraft = !!complaintDraft;
+  const showComplaintDraftTools = toolId === 'letter' && hasComplaintDraft;
+  const showGmailControls = showComplaintDraftTools && GMAIL_INTEGRATION_ENABLED;
 
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [gmailLoading, setGmailLoading] = useState(toolId === 'letter' && hasComplaintDraft);
+  const [gmailLoading, setGmailLoading] = useState(showGmailControls);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [gmailEmail, setGmailEmail] = useState<string | null>(null);
   const [recipientEmail, setRecipientEmail] = useState(complaintDraft?.recipientEmail ?? '');
@@ -36,7 +39,7 @@ export function ResultDisplay({ result, color, toolId }: Props) {
   }, [complaintDraft?.recipientEmail, complaintDraft?.subject]);
 
   useEffect(() => {
-    if (toolId !== 'letter' || !hasComplaintDraft) {
+    if (!showGmailControls) {
       setGmailLoading(false);
       return;
     }
@@ -73,10 +76,10 @@ export function ResultDisplay({ result, color, toolId }: Props) {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [toolId, hasComplaintDraft, t]);
+  }, [showGmailControls, t]);
 
   useEffect(() => {
-    if (toolId !== 'letter' || !hasComplaintDraft) return;
+    if (!showGmailControls) return;
     const params = new URLSearchParams(window.location.search);
     const rawError = params.get('gmail_error');
     if (!rawError) return;
@@ -89,7 +92,7 @@ export function ResultDisplay({ result, color, toolId }: Props) {
         : t.resultCard.errors.connectFailed;
 
     setGmailError(friendlyMessage);
-  }, [toolId, hasComplaintDraft, t]);
+  }, [showGmailControls, t]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(displayText);
@@ -281,10 +284,10 @@ export function ResultDisplay({ result, color, toolId }: Props) {
         {lines}
       </div>
 
-      {toolId === 'letter' && complaintDraft && (
+      {showComplaintDraftTools && (
         <div style={{ marginTop: 20 }}>
           <div className="subtle-divider" style={{ marginBottom: 18 }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <Mail size={18} color={color} />
             <div style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>{t.resultCard.emailDraftTools}</div>
           </div>
@@ -326,36 +329,40 @@ export function ResultDisplay({ result, color, toolId }: Props) {
             </label>
           </div>
 
-          <div className="status-banner status-info" style={{ marginBottom: 14 }}>
-            {gmailLoading
-              ? t.resultCard.checkingGmail
-              : gmailConnected
-              ? formatCopy(t.resultCard.connectedGmail, { email: gmailEmail ?? t.resultCard.connectedFallback })
-              : t.resultCard.connectPrompt}
-          </div>
+          {showGmailControls && (
+            <>
+              <div className="status-banner status-info" style={{ marginBottom: 14 }}>
+                {gmailLoading
+                  ? t.resultCard.checkingGmail
+                  : gmailConnected
+                  ? formatCopy(t.resultCard.connectedGmail, { email: gmailEmail ?? t.resultCard.connectedFallback })
+                  : t.resultCard.connectPrompt}
+              </div>
 
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {!gmailConnected ? (
-              <button className="primary-btn" onClick={handleConnectGmail}>
-                <Link2 size={15} />
-                {t.resultCard.connectGmail}
-              </button>
-            ) : (
-              <>
-                <button className="primary-btn" disabled={savingDraft || !emailSubject.trim()} onClick={handleSaveDraft}>
-                  <Save size={15} />
-                  {savingDraft ? t.resultCard.savingDraft : t.resultCard.saveToDrafts}
-                </button>
-                <button className="secondary-btn" disabled={disconnecting} onClick={handleDisconnectGmail}>
-                  <Unplug size={15} />
-                  {disconnecting ? t.resultCard.disconnecting : t.resultCard.disconnectGmail}
-                </button>
-              </>
-            )}
-          </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {!gmailConnected ? (
+                  <button className="primary-btn" onClick={handleConnectGmail}>
+                    <Link2 size={15} />
+                    {t.resultCard.connectGmail}
+                  </button>
+                ) : (
+                  <>
+                    <button className="primary-btn" disabled={savingDraft || !emailSubject.trim()} onClick={handleSaveDraft}>
+                      <Save size={15} />
+                      {savingDraft ? t.resultCard.savingDraft : t.resultCard.saveToDrafts}
+                    </button>
+                    <button className="secondary-btn" disabled={disconnecting} onClick={handleDisconnectGmail}>
+                      <Unplug size={15} />
+                      {disconnecting ? t.resultCard.disconnecting : t.resultCard.disconnectGmail}
+                    </button>
+                  </>
+                )}
+              </div>
 
-          {gmailMessage && <div className="status-banner status-success" style={{ marginTop: 14 }}>{gmailMessage}</div>}
-          {gmailError && <div className="status-banner status-error" style={{ marginTop: 14 }}>{gmailError}</div>}
+              {gmailMessage && <div className="status-banner status-success" style={{ marginTop: 14 }}>{gmailMessage}</div>}
+              {gmailError && <div className="status-banner status-error" style={{ marginTop: 14 }}>{gmailError}</div>}
+            </>
+          )}
         </div>
       )}
     </div>
