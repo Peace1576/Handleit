@@ -36,8 +36,10 @@ export function ResultDisplay({ result, color, toolId }: Props) {
     }
 
     let active = true;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 5000);
     setGmailLoading(true);
-    fetch('/api/gmail/status')
+    fetch('/api/gmail/status', { signal: controller.signal })
       .then(async res => {
         if (!res.ok) {
           throw new Error('Could not load Gmail connection.');
@@ -53,13 +55,19 @@ export function ResultDisplay({ result, color, toolId }: Props) {
         if (!active) return;
         setGmailConnected(false);
         setGmailEmail(null);
+        setGmailError(prev => prev ?? 'Could not verify Gmail status right now. You can still try connecting.');
       })
       .finally(() => {
         if (!active) return;
+        window.clearTimeout(timeout);
         setGmailLoading(false);
       });
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
   }, [complaintDraft, toolId]);
 
   useEffect(() => {
@@ -156,7 +164,7 @@ export function ResultDisplay({ result, color, toolId }: Props) {
   const handleConnectGmail = () => {
     setGmailError(null);
     setGmailMessage(null);
-    window.location.href = '/api/gmail/connect?next=/tools/complaint-letter';
+    window.location.assign('/api/gmail/connect?next=/tools/complaint-letter');
   };
 
   const handleDisconnectGmail = async () => {

@@ -12,7 +12,6 @@ export const dynamic = 'force-dynamic';
 type StatePayload = {
   state: string;
   next: string;
-  userId: string;
   redirectUri: string;
 };
 
@@ -44,7 +43,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.id !== payload.userId) {
+  if (!user) {
     return errorRedirect(req, payload.next, 'gmail_connect_failed');
   }
 
