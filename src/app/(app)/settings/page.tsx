@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Particles } from '@/components/Particles';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatCopy } from '@/lib/formatCopy';
 import { LANGUAGES } from '@/lib/translations';
 import type { Plan } from '@/types';
 import { ArrowLeft, Globe, LogOut, Wallet } from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { lang, setLang } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
   const [email, setEmail] = useState('');
   const [plan, setPlan] = useState<Plan | null>(null);
   const [usesRemaining, setUsesRemaining] = useState<number | null>(null);
@@ -41,7 +42,7 @@ export default function SettingsPage() {
       const response = await fetch('/api/paddle/portal', { method: 'POST' });
       const data = await response.json();
       if (data.url) window.location.href = data.url;
-      else alert('No billing account found. Please upgrade first.');
+      else alert(t.settingsPage.noBillingAccount);
     } finally {
       setPortalLoading(false);
     }
@@ -56,10 +57,10 @@ export default function SettingsPage() {
   };
 
   const planLabel =
-    plan === 'lifetime' ? 'Lifetime' :
-    plan === 'pro' ? 'Pro' :
-    plan === 'basic' ? 'Basic' :
-    'Free';
+    plan === 'lifetime' ? t.settingsPage.lifetimePlan :
+    plan === 'pro' ? t.settingsPage.proPlan :
+    plan === 'basic' ? t.settingsPage.basicPlan :
+    t.settingsPage.freePlan;
 
   return (
     <div className="ios-bg" style={{ minHeight: '100vh', position: 'relative' }}>
@@ -68,31 +69,31 @@ export default function SettingsPage() {
       <div className="page-wrap" style={{ padding: '24px 0 84px' }}>
         <button className="ghost-btn" onClick={() => router.push('/dashboard')} style={{ marginBottom: 24 }}>
           <ArrowLeft size={16} />
-          Dashboard
+          {t.dashboard}
         </button>
 
         <div style={{ marginBottom: 24 }}>
-          <div className="section-label" style={{ marginBottom: 10 }}>Settings</div>
-          <h1 style={{ fontSize: 'clamp(30px,4vw,42px)', marginBottom: 10 }}>Keep things simple.</h1>
-          <p className="section-copy">Language, billing, and account details are all in one place.</p>
+          <div className="section-label" style={{ marginBottom: 10 }}>{t.settings}</div>
+          <h1 style={{ fontSize: 'clamp(30px,4vw,42px)', marginBottom: 10 }}>{t.settingsPage.title}</h1>
+          <p className="section-copy">{t.settingsPage.subtitle}</p>
         </div>
 
         <div className="two-column" style={{ alignItems: 'start', gap: 20 }}>
           <div className="surface-card" style={{ padding: 22 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
               <Wallet size={18} color="#58A6FF" />
-              <div style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>Account</div>
+              <div style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>{t.settingsPage.account}</div>
             </div>
             <div style={{ display: 'grid', gap: 12 }}>
               <div>
-                <div className="section-label" style={{ marginBottom: 6 }}>Email</div>
-                <div style={{ color: 'rgba(245,249,255,0.8)', fontSize: 14 }}>{email || 'Loading...'}</div>
+                <div className="section-label" style={{ marginBottom: 6 }}>{t.settingsPage.email}</div>
+                <div style={{ color: 'rgba(245,249,255,0.8)', fontSize: 14 }}>{email || t.settingsPage.loading}</div>
               </div>
               <div>
-                <div className="section-label" style={{ marginBottom: 6 }}>Plan</div>
+                <div className="section-label" style={{ marginBottom: 6 }}>{t.settingsPage.plan}</div>
                 <div style={{ color: 'rgba(245,249,255,0.8)', fontSize: 14 }}>
                   {planLabel}
-                  {plan === 'free' && usesRemaining !== null ? ` · ${usesRemaining} uses left` : ''}
+                  {plan === 'free' && usesRemaining !== null ? ` · ${formatCopy(t.settingsPage.usesLeft, { count: usesRemaining })}` : ''}
                 </div>
               </div>
             </div>
@@ -101,7 +102,7 @@ export default function SettingsPage() {
           <div className="surface-card" style={{ padding: 22 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
               <Globe size={18} color="#58A6FF" />
-              <div style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>Language</div>
+              <div style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>{t.settingsPage.language}</div>
             </div>
             <div className="auto-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
               {LANGUAGES.map(language => {
@@ -128,41 +129,41 @@ export default function SettingsPage() {
                 );
               })}
             </div>
-            {langSaved && <div className="status-banner status-success" style={{ marginTop: 14 }}>Language updated.</div>}
+            {langSaved && <div className="status-banner status-success" style={{ marginTop: 14 }}>{t.settingsPage.languageUpdated}</div>}
           </div>
         </div>
 
         <div className="two-column" style={{ alignItems: 'start', gap: 20, marginTop: 20 }}>
           <div className="surface-card" style={{ padding: 22 }}>
-            <div className="section-label" style={{ marginBottom: 10 }}>Billing</div>
+            <div className="section-label" style={{ marginBottom: 10 }}>{t.settingsPage.billing}</div>
             <div style={{ color: 'white', fontWeight: 800, fontSize: 20, marginBottom: 10 }}>
-              {plan === 'free' ? 'Need more usage?' : 'Manage your plan'}
+              {plan === 'free' ? t.settingsPage.needMoreUsage : t.settingsPage.managePlan}
             </div>
             <p className="section-copy" style={{ fontSize: 14, marginBottom: 16 }}>
               {plan === 'free'
-                ? 'Upgrade when you need more usage, saved history, or unlimited access.'
-                : 'Open the billing portal to manage your paid subscription.'}
+                ? t.settingsPage.billingFreeCopy
+                : t.settingsPage.billingPaidCopy}
             </p>
             {plan === 'free' ? (
-              <button className="primary-btn" onClick={() => router.push('/pricing')}>View pricing</button>
+              <button className="primary-btn" onClick={() => router.push('/pricing')}>{t.settingsPage.viewPricing}</button>
             ) : plan !== 'lifetime' ? (
               <button className="secondary-btn" disabled={portalLoading} onClick={handleBillingPortal}>
-                {portalLoading ? 'Opening...' : 'Manage subscription'}
+                {portalLoading ? t.settingsPage.opening : t.settingsPage.manageSubscription}
               </button>
             ) : (
-              <div className="status-banner status-success">You already have lifetime access.</div>
+              <div className="status-banner status-success">{t.settingsPage.lifetimeAccess}</div>
             )}
           </div>
 
           <div className="surface-card" style={{ padding: 22 }}>
-            <div className="section-label" style={{ marginBottom: 10 }}>Session</div>
-            <div style={{ color: 'white', fontWeight: 800, fontSize: 20, marginBottom: 10 }}>Sign out safely</div>
+            <div className="section-label" style={{ marginBottom: 10 }}>{t.settingsPage.session}</div>
+            <div style={{ color: 'white', fontWeight: 800, fontSize: 20, marginBottom: 10 }}>{t.settingsPage.signOutSafely}</div>
             <p className="section-copy" style={{ fontSize: 14, marginBottom: 16 }}>
-              This will clear the current complaint-letter cache for your browser and return you to the home page.
+              {t.settingsPage.signOutCopy}
             </p>
             <button className="secondary-btn" onClick={handleSignOut}>
               <LogOut size={16} />
-              Sign out
+              {t.signOut}
             </button>
           </div>
         </div>

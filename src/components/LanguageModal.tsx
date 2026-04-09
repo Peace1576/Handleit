@@ -6,7 +6,7 @@ import { LANGUAGES } from '@/lib/translations';
 import { HandleItRobotLogo } from '@/components/Logo';
 
 export function LanguageModal() {
-  const { lang, setLang } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
   const [selected, setSelected] = useState(lang);
 
   const handleContinue = () => {
@@ -46,10 +46,10 @@ export function LanguageModal() {
               <HandleItRobotLogo size={56} />
             </div>
             <h2 style={{ color: 'white', fontWeight: 900, fontSize: 24, letterSpacing: '-0.03em', marginBottom: 8 }}>
-              Choose your language
+              {t.chooseLanguage}
             </h2>
             <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, lineHeight: 1.6 }}>
-              We&apos;ll translate the app and AI responses to your language.
+              {t.languageSub}
             </p>
           </div>
 
@@ -98,7 +98,7 @@ export function LanguageModal() {
               transition: 'all 0.2s',
             }}
           >
-            Continue →
+            {t.continueBtn} →
           </button>
         </div>
       </div>

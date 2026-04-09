@@ -1,12 +1,13 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { LANGUAGES, TRANSLATIONS, type Language } from '@/lib/translations';
+import { type Language } from '@/lib/translations';
+import { getAppTranslations, getLanguageMeta, getSupportedLanguage, type AppTranslations } from '@/lib/appTranslations';
 
 interface LanguageContextType {
   lang: string;
   language: Language;
-  t: typeof TRANSLATIONS['en'];
+  t: AppTranslations;
   setLang: (code: string) => void;
   showModal: boolean;
   setShowModal: (v: boolean) => void;
@@ -19,27 +20,59 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    const applyLanguage = (code: string) => {
+      const meta = getLanguageMeta(code);
+      document.documentElement.dir = meta.dir;
+      document.documentElement.lang = meta.code;
+    };
+
+    const detectBrowserLanguage = () => {
+      const candidates = [
+        ...(navigator.languages ?? []),
+        navigator.language,
+      ].filter(Boolean);
+
+      for (const candidate of candidates) {
+        const matched = getSupportedLanguage(candidate);
+        if (matched) return matched;
+      }
+
+      return null;
+    };
+
     const stored = localStorage.getItem('handleit_language');
-    if (stored && TRANSLATIONS[stored as keyof typeof TRANSLATIONS]) {
-      setLangState(stored);
-    } else {
-      // No language set — show modal
-      setShowModal(true);
+    const storedLanguage = getSupportedLanguage(stored);
+
+    if (storedLanguage) {
+      setLangState(storedLanguage);
+      applyLanguage(storedLanguage);
+      return;
     }
+
+    const detectedLanguage = detectBrowserLanguage();
+    if (detectedLanguage) {
+      setLangState(detectedLanguage);
+      localStorage.setItem('handleit_language', detectedLanguage);
+      applyLanguage(detectedLanguage);
+      return;
+    }
+
+    applyLanguage('en');
+    setShowModal(true);
   }, []);
 
   const setLang = (code: string) => {
-    setLangState(code);
-    localStorage.setItem('handleit_language', code);
+    const supported = getSupportedLanguage(code) ?? 'en';
+    setLangState(supported);
+    localStorage.setItem('handleit_language', supported);
     setShowModal(false);
-    // Update html dir for RTL languages
-    const lang = LANGUAGES.find(l => l.code === code);
-    document.documentElement.dir = lang?.dir ?? 'ltr';
-    document.documentElement.lang = code;
+    const nextLanguage = getLanguageMeta(supported);
+    document.documentElement.dir = nextLanguage.dir;
+    document.documentElement.lang = supported;
   };
 
-  const language = LANGUAGES.find(l => l.code === lang) ?? LANGUAGES[0];
-  const t = (TRANSLATIONS[lang as keyof typeof TRANSLATIONS] ?? TRANSLATIONS.en) as typeof TRANSLATIONS['en'];
+  const language = getLanguageMeta(lang);
+  const t = getAppTranslations(lang);
 
   return (
     <LanguageContext.Provider value={{ lang, language, t, setLang, showModal, setShowModal }}>

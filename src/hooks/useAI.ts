@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { getAppTranslations } from '@/lib/appTranslations';
 import type { GeneratedResult, ToolId } from '@/types';
 
 interface GenerateParams {
@@ -22,6 +23,7 @@ export function useAI(onUpgradeRequired?: () => void) {
     setError(null);
 
     const language = localStorage.getItem('handleit_language') ?? 'en';
+    const t = getAppTranslations(language);
 
     try {
       const res = await fetch('/api/ai/generate', {
@@ -37,7 +39,7 @@ export function useAI(onUpgradeRequired?: () => void) {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? 'Something went wrong. Try again.');
+        setError(data.error ?? t.loginPage.errors.invalidDetails);
         return;
       }
 
@@ -47,7 +49,7 @@ export function useAI(onUpgradeRequired?: () => void) {
         complaintDraft: data.complaint_draft ?? null,
       });
     } catch {
-      setError('Connection error. Please try again.');
+      setError(t.connectionError);
     } finally {
       setLoading(false);
     }

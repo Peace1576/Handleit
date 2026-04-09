@@ -1,12 +1,15 @@
 'use client';
 
 import { useUsage } from '@/hooks/useUsage';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { formatCopy } from '@/lib/formatCopy';
 import { useRouter } from 'next/navigation';
 
 const FREE_TOTAL = 5;
 
 export function UsageBar() {
   const { plan, uses_remaining, loading } = useUsage();
+  const { t } = useLanguage();
   const router = useRouter();
 
   if (loading || !plan) return null;
@@ -14,7 +17,7 @@ export function UsageBar() {
   if (plan === 'lifetime') {
     return (
       <div className="pill" style={{ background: 'rgba(51,208,165,0.12)', borderColor: 'rgba(51,208,165,0.22)', color: '#8ff2cf' }}>
-        Lifetime Access
+        {t.usageBar.lifetimeAccess}
       </div>
     );
   }
@@ -22,7 +25,7 @@ export function UsageBar() {
   if (plan === 'pro' || plan === 'basic') {
     return (
       <div className="pill" style={{ background: 'rgba(51,208,165,0.12)', borderColor: 'rgba(51,208,165,0.22)', color: '#8ff2cf' }}>
-        {plan === 'pro' ? 'Pro Plan' : 'Basic Plan'}
+        {plan === 'pro' ? t.usageBar.proPlan : t.usageBar.basicPlan}
       </div>
     );
   }
@@ -51,10 +54,10 @@ export function UsageBar() {
         padding: '9px 12px',
         minWidth: 148,
       }}
-      title="Upgrade for unlimited uses"
+      title={t.usageBar.upgradeTitle}
     >
       <span style={{ fontSize: 11, fontWeight: 700, color: textColor, whiteSpace: 'nowrap' }}>
-        {isEmpty ? 'Upgrade to continue' : `${remaining} of ${FREE_TOTAL} uses left`}
+        {isEmpty ? t.usageBar.upgradeToContinue : formatCopy(t.usageBar.usesLeft, { remaining, total: FREE_TOTAL })}
       </span>
       <div style={{ width: '100%', height: 6, borderRadius: 99, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${pct}%`, borderRadius: 99, background: barColor, transition: 'width 0.4s ease' }} />

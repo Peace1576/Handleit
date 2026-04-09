@@ -18,9 +18,9 @@ function DashboardContent() {
   const { t } = useLanguage();
 
   const TOOLS = [
-    { id: 'form-explainer', Icon: ClipboardList, name: t.formName, desc: t.formDesc, color: '#58A6FF', accent: 'Explain forms in plain English.' },
-    { id: 'complaint-letter', Icon: Mail, name: t.letterName, desc: t.letterDesc, color: '#8B7BFF', accent: 'Turn bad experiences into clean letters.' },
-    { id: 'ai-reply', Icon: MessageCircle, name: t.replyName, desc: t.replyDesc, color: '#33D0A5', accent: 'Get useful responses without overthinking.' },
+    { id: 'form-explainer', Icon: ClipboardList, name: t.formName, desc: t.formDesc, color: '#58A6FF', accent: t.tools.form.accent },
+    { id: 'complaint-letter', Icon: Mail, name: t.letterName, desc: t.letterDesc, color: '#8B7BFF', accent: t.tools.letter.accent },
+    { id: 'ai-reply', Icon: MessageCircle, name: t.replyName, desc: t.replyDesc, color: '#33D0A5', accent: t.tools.reply.accent },
   ];
 
   useEffect(() => {
@@ -79,25 +79,25 @@ function DashboardContent() {
 
         <div className="two-column fade-up" style={{ alignItems: 'center', gap: 28, marginBottom: 28 }}>
           <div>
-            <div className="section-label" style={{ marginBottom: 10 }}>Workspace</div>
+            <div className="section-label" style={{ marginBottom: 10 }}>{t.dashboardPage.workspace}</div>
             <h1 style={{ fontSize: 'clamp(30px,4vw,46px)', marginBottom: 12 }}>
               {t.dashHeading} <span style={{ color: '#58A6FF' }}>{t.dashHandle}</span>
             </h1>
             <p className="section-copy" style={{ maxWidth: 560, marginBottom: 20 }}>
-              Choose the job you need done, paste the situation, and get a result you can actually use.
+              {t.dashboardPage.intro}
             </p>
             <div className="metric-row">
               <div className="metric-pill">
-                <span className="metric-value">3 tools</span>
-                <span className="metric-label">ready to use</span>
+                <span className="metric-value">{t.dashboardPage.metrics.toolsValue}</span>
+                <span className="metric-label">{t.dashboardPage.metrics.toolsLabel}</span>
               </div>
               <div className="metric-pill">
-                <span className="metric-value">Fast flow</span>
-                <span className="metric-label">describe, generate, copy</span>
+                <span className="metric-value">{t.dashboardPage.metrics.flowValue}</span>
+                <span className="metric-label">{t.dashboardPage.metrics.flowLabel}</span>
               </div>
               <div className="metric-pill">
-                <span className="metric-value">Saved</span>
-                <span className="metric-label">history available in app</span>
+                <span className="metric-value">{t.dashboardPage.metrics.savedValue}</span>
+                <span className="metric-label">{t.dashboardPage.metrics.savedLabel}</span>
               </div>
             </div>
           </div>
@@ -105,14 +105,10 @@ function DashboardContent() {
           <div className="surface-card fade-up fade-up-delay-1" style={{ padding: 22 }}>
             <div className="pill" style={{ marginBottom: 14 }}>
               <Sparkles size={14} color="#58A6FF" />
-              Quick start
+              {t.dashboardPage.quickStart}
             </div>
             <div style={{ display: 'grid', gap: 12 }}>
-              {[
-                'Open the tool that matches your task',
-                'Paste the messy real-world input',
-                'Copy the finished output and move on',
-              ].map(step => (
+              {t.dashboardPage.quickStartSteps.map(step => (
                 <div key={step} style={{ display: 'flex', gap: 10, color: 'rgba(245,249,255,0.74)', fontSize: 14, lineHeight: 1.6 }}>
                   <span style={{ width: 22, height: 22, borderRadius: 999, background: 'rgba(88,166,255,0.16)', border: '1px solid rgba(88,166,255,0.26)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#58A6FF', fontWeight: 800, fontSize: 12, flexShrink: 0 }}>•</span>
                   <span>{step}</span>
@@ -133,7 +129,7 @@ function DashboardContent() {
               <div style={{ width: 50, height: 50, borderRadius: 16, background: `${tool.color}18`, border: `1px solid ${tool.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
                 <tool.Icon size={22} color={tool.color} />
               </div>
-              <div className="section-label" style={{ color: tool.color, marginBottom: 8 }}>Tool</div>
+              <div className="section-label" style={{ color: tool.color, marginBottom: 8 }}>{t.dashboardPage.toolLabel}</div>
               <h3 style={{ fontSize: 22, marginBottom: 8 }}>{tool.name}</h3>
               <p style={{ color: 'rgba(232,241,255,0.72)', fontSize: 14, lineHeight: 1.7, marginBottom: 10 }}>{tool.accent}</p>
               <p style={{ color: 'rgba(232,241,255,0.48)', fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>{tool.desc}</p>

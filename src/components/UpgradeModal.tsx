@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useRouter } from 'next/navigation';
 
 declare global {
@@ -17,6 +18,7 @@ interface Props {
 
 export function UpgradeModal({ onClose }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [paddleReady, setPaddleReady] = useState(false);
 
@@ -36,7 +38,7 @@ export function UpgradeModal({ onClose }: Props) {
 
   const handleUpgrade = async () => {
     if (!paddleReady || !window.Paddle) {
-      alert('Payment system loading, please try again.');
+      alert(t.upgradeModal.alerts.paymentLoading);
       return;
     }
     setLoading(true);
@@ -47,7 +49,7 @@ export function UpgradeModal({ onClose }: Props) {
 
     const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_PRO_MONTHLY ?? '';
     if (!priceId) {
-      alert('Plan not configured yet.');
+      alert(t.upgradeModal.alerts.planNotConfigured);
       setLoading(false);
       return;
     }
@@ -67,7 +69,7 @@ export function UpgradeModal({ onClose }: Props) {
       onClose();
     } catch (err) {
       console.error('Paddle checkout error:', err);
-      alert('Could not open checkout. Please try again.');
+      alert(t.upgradeModal.alerts.checkoutFailed);
     } finally {
       setLoading(false);
     }
@@ -86,17 +88,17 @@ export function UpgradeModal({ onClose }: Props) {
         <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.7),transparent)' }} />
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>🚀</div>
-          <h2 style={{ color: 'white', fontWeight: 800, fontSize: 22, marginBottom: 8 }}>Free uses all gone!</h2>
-          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, lineHeight: 1.6 }}>Upgrade to Pro for unlimited access to all three tools.</p>
+          <h2 style={{ color: 'white', fontWeight: 800, fontSize: 22, marginBottom: 8 }}>{t.upgradeModal.title}</h2>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, lineHeight: 1.6 }}>{t.upgradeModal.subtitle}</p>
         </div>
 
         <div style={{ position: 'relative', borderRadius: 18, padding: 20, marginBottom: 16, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(100,150,255,0.25)', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,rgba(26,86,219,0.3),rgba(124,58,237,0.2))', borderRadius: 18 }} />
           <div style={{ position: 'relative' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Pro Plan</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>{t.upgradeModal.plan}</div>
             <div style={{ fontSize: 40, fontWeight: 900, color: 'white', marginBottom: 4 }}>$17<span style={{ fontSize: 16, fontWeight: 400, opacity: 0.6 }}>/mo</span></div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 16 }}>or $149/year — save 27%</div>
-            {['Unlimited uses, all tools', 'Save results forever', 'No watermarks', 'Priority AI (faster)'].map(f => (
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 16 }}>{t.upgradeModal.annualSave}</div>
+            {t.upgradeModal.features.map(f => (
               <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>
                 <span style={{ color: '#34D399', fontWeight: 700 }}>✓</span>{f}
               </div>
@@ -110,19 +112,19 @@ export function UpgradeModal({ onClose }: Props) {
           onClick={handleUpgrade}
           disabled={loading}
         >
-          {loading ? 'Opening checkout…' : 'Upgrade to Pro →'}
+          {loading ? t.upgradeModal.openingCheckout : t.upgradeModal.upgrade}
         </button>
         <button
           onClick={() => router.push('/pricing')}
           style={{ width: '100%', padding: '10px', borderRadius: 14, color: 'rgba(255,255,255,0.4)', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 4 }}
         >
-          See all plans
+          {t.upgradeModal.seeAllPlans}
         </button>
         <button
           onClick={onClose}
           style={{ width: '100%', padding: '10px', borderRadius: 14, color: 'rgba(255,255,255,0.25)', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer' }}
         >
-          Maybe later
+          {t.upgradeModal.maybeLater}
         </button>
       </div>
     </div>

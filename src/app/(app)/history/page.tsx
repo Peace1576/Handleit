@@ -5,17 +5,18 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Particles } from '@/components/Particles';
 import { ResultDisplay } from '@/components/ResultDisplay';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { SavedResult, ToolId } from '@/types';
 import { ArrowLeft, ClipboardList, Mail, MessageCircle } from 'lucide-react';
 
-const TOOL_META: Record<ToolId, { Icon: typeof ClipboardList; name: string; color: string }> = {
-  form: { Icon: ClipboardList, name: 'Form Explainer', color: '#58A6FF' },
-  letter: { Icon: Mail, name: 'Complaint Letter', color: '#8B7BFF' },
-  reply: { Icon: MessageCircle, name: 'AI Reply', color: '#33D0A5' },
-};
-
 export default function HistoryPage() {
   const router = useRouter();
+  const { t } = useLanguage();
+  const TOOL_META: Record<ToolId, { Icon: typeof ClipboardList; name: string; color: string }> = {
+    form: { Icon: ClipboardList, name: t.formName, color: '#58A6FF' },
+    letter: { Icon: Mail, name: t.letterName, color: '#8B7BFF' },
+    reply: { Icon: MessageCircle, name: t.replyName, color: '#33D0A5' },
+  };
   const [results, setResults] = useState<SavedResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -40,13 +41,13 @@ export default function HistoryPage() {
       <div className="page-wrap" style={{ padding: '24px 0 84px' }}>
         <button className="ghost-btn" onClick={() => router.push('/dashboard')} style={{ marginBottom: 24 }}>
           <ArrowLeft size={16} />
-          Dashboard
+          {t.dashboard}
         </button>
 
         <div style={{ marginBottom: 24 }}>
-          <div className="section-label" style={{ marginBottom: 10 }}>History</div>
-          <h1 style={{ fontSize: 'clamp(30px,4vw,42px)', marginBottom: 10 }}>Your recent results.</h1>
-          <p className="section-copy">The most recent 50 outputs are saved here automatically.</p>
+          <div className="section-label" style={{ marginBottom: 10 }}>{t.history}</div>
+          <h1 style={{ fontSize: 'clamp(30px,4vw,42px)', marginBottom: 10 }}>{t.historyPage.title}</h1>
+          <p className="section-copy">{t.historyPage.subtitle}</p>
         </div>
 
         {loading && (
@@ -59,11 +60,11 @@ export default function HistoryPage() {
 
         {!loading && results.length === 0 && (
           <div className="surface-card" style={{ padding: 26, textAlign: 'center' }}>
-            <div style={{ color: 'white', fontWeight: 800, fontSize: 20, marginBottom: 10 }}>No results yet.</div>
+            <div style={{ color: 'white', fontWeight: 800, fontSize: 20, marginBottom: 10 }}>{t.historyPage.emptyTitle}</div>
             <p className="section-copy" style={{ fontSize: 14, marginBottom: 18 }}>
-              Use one of the tools and your output will show up here.
+              {t.historyPage.emptyCopy}
             </p>
-            <button className="primary-btn" onClick={() => router.push('/dashboard')}>Go to dashboard</button>
+            <button className="primary-btn" onClick={() => router.push('/dashboard')}>{t.historyPage.goToDashboard}</button>
           </div>
         )}
 

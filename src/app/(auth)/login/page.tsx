@@ -7,26 +7,27 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { HandleItRobotLogo } from '@/components/Logo';
 import { Particles } from '@/components/Particles';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 
-function friendlyError(msg: string): string {
+function friendlyError(msg: string, messages: ReturnType<typeof useLanguage>['t']['loginPage']['errors']): string {
   if (msg.includes('provider is not enabled') || msg.includes('Unsupported provider')) {
-    return 'Email sign-up is not enabled for this account yet.';
+    return messages.providerDisabled;
   }
   if (msg.includes('Invalid login credentials')) {
-    return 'Wrong email or password. Double-check and try again.';
+    return messages.invalidCredentials;
   }
   if (msg.includes('Email not confirmed')) {
-    return 'Please confirm your email before signing in.';
+    return messages.emailNotConfirmed;
   }
   if (msg.includes('User already registered')) {
-    return 'An account with this email already exists. Sign in instead.';
+    return messages.userAlreadyRegistered;
   }
   if (msg.includes('Password should be')) {
-    return 'Password must be at least 8 characters.';
+    return messages.passwordTooShort;
   }
   if (msg.includes('Unable to validate') || msg.includes('invalid')) {
-    return 'Something went wrong. Check your details and try again.';
+    return messages.invalidDetails;
   }
   return msg;
 }
@@ -49,6 +50,7 @@ function safeRedirectPath(next: string | null): string {
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t } = useLanguage();
   const redirectedFrom = safeRedirectPath(params.get('redirectedFrom'));
 
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
@@ -60,14 +62,14 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(() => {
     const param = params.get('error');
     if (param === 'auth_failed') {
-      return 'The confirmation link is invalid or expired. Sign in below or request a new one.';
+      return t.loginPage.errors.authFailed;
     }
     return null;
   });
   const [success, setSuccess] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(() => {
     return params.get('gmail_connected') === 'true'
-      ? 'Gmail connected. Sign in once more to go back to your complaint letter.'
+      ? t.loginPage.banners.gmailConnected
       : null;
   });
 
@@ -82,7 +84,7 @@ function LoginForm() {
     reset();
 
     if (!email.trim() || !password) {
-      setError('Please enter your email and password.');
+      setError(t.loginPage.errors.missingEmailPassword);
       return;
     }
 
@@ -97,15 +99,15 @@ function LoginForm() {
 
       if (signInError) {
         if (signInError.message.includes('Invalid login credentials') || signInError.message.includes('invalid_credentials')) {
-          setError('Wrong email or password, or your email still needs to be confirmed.');
+          setError(t.loginPage.errors.invalidCredentialsAlt);
         } else {
-          setError(friendlyError(signInError.message));
+          setError(friendlyError(signInError.message, t.loginPage.errors));
         }
       } else {
         router.push(redirectedFrom);
       }
     } catch {
-      setError('Connection error. Please try again.');
+      setError(t.loginPage.errors.connection);
     } finally {
       setLoading(false);
     }
@@ -116,11 +118,11 @@ function LoginForm() {
     reset();
 
     if (!email.trim()) {
-      setError('Please enter your email.');
+      setError(t.loginPage.errors.missingEmail);
       return;
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError(t.loginPage.errors.passwordTooShort);
       return;
     }
 
@@ -132,7 +134,7 @@ function LoginForm() {
         .catch(() => null);
 
       if (check && check.disposable === true) {
-        setError('Please use a real email address. Temporary emails are not allowed.');
+        setError(t.loginPage.errors.disposableEmail);
         setLoading(false);
         return;
       }
@@ -154,9 +156,9 @@ function LoginForm() {
     });
 
     if (signUpError) {
-      setError(friendlyError(signUpError.message));
+      setError(friendlyError(signUpError.message, t.loginPage.errors));
     } else {
-      setSuccess('Check your email for the confirmation link, then come back and sign in.');
+      setSuccess(t.loginPage.successCheckEmail);
     }
 
     setLoading(false);
@@ -171,7 +173,7 @@ function LoginForm() {
     });
 
     if (oauthError) {
-      setError(friendlyError(oauthError.message));
+      setError(friendlyError(oauthError.message, t.loginPage.errors));
     }
   };
 
@@ -182,28 +184,24 @@ function LoginForm() {
       <div className="page-wrap" style={{ padding: '24px 0 64px' }}>
         <button className="ghost-btn" onClick={() => router.push('/')} style={{ marginBottom: 24 }}>
           <ArrowLeft size={16} />
-          Back
+          {t.back}
         </button>
 
         <div className="two-column" style={{ alignItems: 'center', gap: 28 }}>
           <div className="fade-up">
             <div className="pill" style={{ marginBottom: 18 }}>
               <Sparkles size={14} color="#58A6FF" />
-              Clean login, 5 free uses, no card
+              {t.loginPage.heroPill}
             </div>
             <h1 style={{ fontSize: 'clamp(30px,4vw,48px)', marginBottom: 14 }}>
-              Handle the admin work without the usual mess.
+              {t.loginPage.heroTitle}
             </h1>
             <p className="section-copy" style={{ maxWidth: 520, marginBottom: 24 }}>
-              Sign in once and keep the same simple workflow across forms, complaint letters, and reply drafting.
+              {t.loginPage.heroSubtitle}
             </p>
 
             <div style={{ display: 'grid', gap: 12 }}>
-              {[
-                'Start with 5 free uses right away',
-                'Google sign-in and email/password both supported',
-                'Gmail draft flow available from complaint letters',
-              ].map(point => (
+              {t.loginPage.points.map(point => (
                 <div key={point} style={{ display: 'flex', gap: 10, color: 'rgba(245,249,255,0.76)', fontSize: 14, lineHeight: 1.6 }}>
                   <CheckCircle2 size={16} color="#58A6FF" style={{ flexShrink: 0, marginTop: 3 }} />
                   <span>{point}</span>
@@ -212,10 +210,10 @@ function LoginForm() {
             </div>
 
             <div className="surface-card fade-up fade-up-delay-1" style={{ marginTop: 24, padding: 20 }}>
-              <div className="section-label" style={{ marginBottom: 10 }}>Best for</div>
-              <div style={{ color: 'white', fontWeight: 800, fontSize: 18, marginBottom: 8 }}>People who just need the job done.</div>
+              <div className="section-label" style={{ marginBottom: 10 }}>{t.loginPage.bestForLabel}</div>
+              <div style={{ color: 'white', fontWeight: 800, fontSize: 18, marginBottom: 8 }}>{t.loginPage.bestForTitle}</div>
               <div style={{ color: 'rgba(232,241,255,0.62)', fontSize: 14, lineHeight: 1.7 }}>
-                Upload the form, describe the issue, or paste the message. HandleIt keeps the interaction short and clear.
+                {t.loginPage.bestForCopy}
               </div>
             </div>
           </div>
@@ -229,7 +227,7 @@ function LoginForm() {
                 </div>
               </div>
               <div style={{ color: 'rgba(232,241,255,0.54)', fontSize: 14 }}>
-                {tab === 'signin' ? 'Welcome back' : 'Create your free account'}
+                {tab === 'signin' ? t.loginPage.welcomeBack : t.loginPage.createFreeAccount}
               </div>
             </div>
 
@@ -239,62 +237,62 @@ function LoginForm() {
                   {success}
                 </div>
                 <button className="primary-btn" onClick={() => { setSuccess(null); setTab('signin'); setPassword(''); }}>
-                  Go to sign in
+                  {t.loginPage.goToSignIn}
                 </button>
               </div>
             ) : (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>
                   <button className={tab === 'signin' ? 'primary-btn' : 'secondary-btn'} onClick={() => { setTab('signin'); reset(); }}>
-                    Sign in
+                    {t.loginPage.signIn}
                   </button>
                   <button className={tab === 'signup' ? 'primary-btn' : 'secondary-btn'} onClick={() => { setTab('signup'); reset(); }}>
-                    Create account
+                    {t.loginPage.createAccount}
                   </button>
                 </div>
 
                 {banner && <div className="status-banner status-success" style={{ marginBottom: 14 }}>{banner}</div>}
 
                 <button className="secondary-btn" style={{ width: '100%', marginBottom: 18 }} onClick={handleGoogle}>
-                  Continue with Google
+                  {t.loginPage.continueWithGoogle}
                 </button>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
                   <div className="subtle-divider" style={{ flex: 1 }} />
-                  <span style={{ color: 'rgba(232,241,255,0.36)', fontSize: 12 }}>or with email</span>
+                  <span style={{ color: 'rgba(232,241,255,0.36)', fontSize: 12 }}>{t.loginPage.orWithEmail}</span>
                   <div className="subtle-divider" style={{ flex: 1 }} />
                 </div>
 
                 {tab === 'signin' ? (
                   <form onSubmit={handleSignIn} style={{ display: 'grid', gap: 12 }}>
-                    <input className="text-input" type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)} required />
-                    <input className="text-input" type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
+                    <input className="text-input" type="email" placeholder={t.loginPage.emailPlaceholder} value={email} onChange={e => setEmail(e.target.value)} required />
+                    <input className="text-input" type="password" placeholder={t.loginPage.passwordPlaceholder} value={password} onChange={e => setPassword(e.target.value)} required />
                     {error && <div className="status-banner status-error">{error}</div>}
                     <button className="primary-btn" type="submit" disabled={loading} style={{ width: '100%' }}>
-                      {loading ? 'Signing in...' : <>Sign in <ArrowRight size={16} /></>}
+                      {loading ? t.loginPage.signingIn : <>{t.loginPage.signIn} <ArrowRight size={16} /></>}
                     </button>
                   </form>
                 ) : (
                   <form onSubmit={handleSignUp} style={{ display: 'grid', gap: 12 }}>
-                    <input className="text-input" type="text" placeholder="Your name (optional)" value={name} onChange={e => setName(e.target.value)} />
-                    <input className="text-input" type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)} required />
-                    <input className="text-input" type="password" placeholder="Password (min 8 characters)" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} />
+                    <input className="text-input" type="text" placeholder={t.loginPage.namePlaceholder} value={name} onChange={e => setName(e.target.value)} />
+                    <input className="text-input" type="email" placeholder={t.loginPage.emailPlaceholder} value={email} onChange={e => setEmail(e.target.value)} required />
+                    <input className="text-input" type="password" placeholder={t.loginPage.passwordMinPlaceholder} value={password} onChange={e => setPassword(e.target.value)} required minLength={8} />
 
                     <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, color: 'rgba(232,241,255,0.54)', fontSize: 13, lineHeight: 1.6, cursor: 'pointer' }}>
                       <input type="checkbox" checked={consent} onChange={() => setConsent(!consent)} style={{ marginTop: 4 }} />
-                      <span>Email me updates and occasional product news.</span>
+                      <span>{t.loginPage.marketingConsent}</span>
                     </label>
 
                     {error && <div className="status-banner status-error">{error}</div>}
 
                     <button className="primary-btn" type="submit" disabled={loading} style={{ width: '100%' }}>
-                      {loading ? 'Creating account...' : <>Create account <ArrowRight size={16} /></>}
+                      {loading ? t.loginPage.creatingAccount : <>{t.loginPage.createAccount} <ArrowRight size={16} /></>}
                     </button>
                   </form>
                 )}
 
                 <div style={{ color: 'rgba(232,241,255,0.32)', fontSize: 12, lineHeight: 1.6, marginTop: 16 }}>
-                  By continuing, you agree to the HandleIt terms and privacy policy.
+                  {t.loginPage.agreement}
                 </div>
               </>
             )}

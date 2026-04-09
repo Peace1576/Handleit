@@ -4,97 +4,28 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Particles } from '@/components/Particles';
 import { HandleItRobotLogo } from '@/components/Logo';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ClipboardList, Mail, MessageCircle, ArrowRight, CheckCircle2, Shield, Sparkles } from 'lucide-react';
 import { isLifetimeDealActive } from '@/lib/launch';
 
-const PREVIEW_TABS = [
-  {
-    label: 'Forms',
-    color: '#58A6FF',
-    input: 'Box 14 on my W-2 says NY SDI. What does that actually mean?',
-    title: 'Plain-English answer',
-    bullets: [
-      'Explains the field in simple terms',
-      'Tells you whether you need to enter it',
-      'Flags anything time-sensitive or risky',
-    ],
-  },
-  {
-    label: 'Letters',
-    color: '#8B7BFF',
-    input: 'My airline cancelled my flight and refused to refund me.',
-    title: 'Complaint letter ready',
-    bullets: [
-      'Firm but professional tone',
-      'Clear refund request and next step',
-      'Easy to copy, download, or draft in Gmail',
-    ],
-  },
-  {
-    label: 'Replies',
-    color: '#33D0A5',
-    input: 'My manager sent a passive-aggressive message. Help me reply.',
-    title: 'Three reply options',
-    bullets: [
-      'Assertive when you need boundaries',
-      'Diplomatic when you want calm',
-      'Brief when you just need to move on',
-    ],
-  },
-];
-
-const TOOLS = [
-  {
-    id: 'form-explainer',
-    title: 'Form Explainer',
-    icon: ClipboardList,
-    color: '#58A6FF',
-    summary: 'Understand tax, legal, insurance, and government forms without guessing.',
-    points: ['Upload or paste text', 'Clear explanations', 'Fast enough for real life'],
-  },
-  {
-    id: 'complaint-letter',
-    title: 'Complaint Letter',
-    icon: Mail,
-    color: '#8B7BFF',
-    summary: 'Turn a messy bad experience into a polished letter that gets to the point.',
-    points: ['Structured for action', 'Professional tone', 'Ready for Gmail drafts'],
-  },
-  {
-    id: 'ai-reply',
-    title: 'AI Reply',
-    icon: MessageCircle,
-    color: '#33D0A5',
-    summary: 'Get calm, useful responses for stressful messages in seconds.',
-    points: ['Three tone options', 'Clean wording', 'No prompt-writing needed'],
-  },
-];
-
-const FAQS = [
-  {
-    q: 'What does HandleIt actually do?',
-    a: 'It helps with life-admin writing: explaining forms, drafting complaint letters, and writing better replies to stressful messages.',
-  },
-  {
-    q: 'Do I need to know how to prompt AI?',
-    a: 'No. The product is built around specific tools, so you just describe the situation and HandleIt does the structured work for you.',
-  },
-  {
-    q: 'Can I try it before paying?',
-    a: 'Yes. You get 5 free uses across the tools, with no credit card required.',
-  },
-  {
-    q: 'Is the complaint letter tool the same as direct sending?',
-    a: 'You can generate the letter immediately, then copy it, download it, or save it into Gmail drafts after connecting Gmail.',
-  },
-];
-
 export default function LandingPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [scrolled, setScrolled] = useState(false);
   const lifetimeActive = isLifetimeDealActive();
+  const PREVIEW_TABS = [
+    { ...t.landingPage.previewTabs[0], color: '#58A6FF' },
+    { ...t.landingPage.previewTabs[1], color: '#8B7BFF' },
+    { ...t.landingPage.previewTabs[2], color: '#33D0A5' },
+  ];
+  const TOOLS = [
+    { id: 'form-explainer', title: t.formName, icon: ClipboardList, color: '#58A6FF', summary: t.landingPage.toolCards[0].summary, points: t.landingPage.toolCards[0].points },
+    { id: 'complaint-letter', title: t.letterName, icon: Mail, color: '#8B7BFF', summary: t.landingPage.toolCards[1].summary, points: t.landingPage.toolCards[1].points },
+    { id: 'ai-reply', title: t.replyName, icon: MessageCircle, color: '#33D0A5', summary: t.landingPage.toolCards[2].summary, points: t.landingPage.toolCards[2].points },
+  ];
+  const FAQS = t.landingPage.faqs;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -108,7 +39,7 @@ export default function LandingPage() {
     }, 3600);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [PREVIEW_TABS.length]);
 
   const preview = PREVIEW_TABS[activeTab];
 
@@ -132,10 +63,10 @@ export default function LandingPage() {
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <button className="ghost-btn" onClick={() => router.push('/pricing')}>Pricing</button>
-            <button className="ghost-btn" onClick={() => document.querySelector('#faq')?.scrollIntoView({ behavior: 'smooth' })}>FAQ</button>
-            <button className="secondary-btn" onClick={() => router.push('/login')}>Log in</button>
-            <button className="primary-btn" onClick={() => router.push('/dashboard')}>Start free <ArrowRight size={16} /></button>
+            <button className="ghost-btn" onClick={() => router.push('/pricing')}>{t.pricing}</button>
+            <button className="ghost-btn" onClick={() => document.querySelector('#faq')?.scrollIntoView({ behavior: 'smooth' })}>{t.faq}</button>
+            <button className="secondary-btn" onClick={() => router.push('/login')}>{t.logIn}</button>
+            <button className="primary-btn" onClick={() => router.push('/dashboard')}>{t.startFree.replace(' →', '')} <ArrowRight size={16} /></button>
           </div>
         </div>
       </div>
@@ -146,40 +77,40 @@ export default function LandingPage() {
             {lifetimeActive && (
               <div className="pill" style={{ marginBottom: 20, color: '#c8d9ff' }}>
                 <Sparkles size={14} color="#58A6FF" />
-                Lifetime launch deal available right now
+                {t.landingPage.heroPill}
               </div>
             )}
 
-            <div className="section-label" style={{ marginBottom: 12 }}>AI for life admin</div>
+            <div className="section-label" style={{ marginBottom: 12 }}>{t.landingPage.heroEyebrow}</div>
             <h1 className="section-title" style={{ marginBottom: 18 }}>
-              Simple tools for the forms, complaints, and replies you do not want to write by hand.
+              {t.landingPage.heroTitle}
             </h1>
             <p className="section-copy" style={{ maxWidth: 560, marginBottom: 28 }}>
-              HandleIt keeps the experience straightforward: paste the problem, get a useful result, and move on with your day.
+              {t.landingPage.heroSubtitle}
             </p>
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
               <button className="primary-btn" onClick={() => router.push('/dashboard')}>
-                Try 5 free uses
+                {t.landingPage.tryFreeCta}
                 <ArrowRight size={16} />
               </button>
               <button className="secondary-btn" onClick={() => router.push('/pricing')}>
-                See pricing
+                {t.landingPage.seePricingCta}
               </button>
             </div>
 
             <div className="metric-row">
               <div className="metric-pill">
-                <span className="metric-value">3</span>
-                <span className="metric-label">purpose-built tools</span>
+                <span className="metric-value">{t.landingPage.metrics.purposeBuiltValue}</span>
+                <span className="metric-label">{t.landingPage.metrics.purposeBuiltLabel}</span>
               </div>
               <div className="metric-pill">
-                <span className="metric-value">5 free</span>
-                <span className="metric-label">uses to start</span>
+                <span className="metric-value">{t.landingPage.metrics.freeValue}</span>
+                <span className="metric-label">{t.landingPage.metrics.freeLabel}</span>
               </div>
               <div className="metric-pill">
-                <span className="metric-value">10 sec</span>
-                <span className="metric-label">to get a clean result</span>
+                <span className="metric-value">{t.landingPage.metrics.resultValue}</span>
+                <span className="metric-label">{t.landingPage.metrics.resultLabel}</span>
               </div>
             </div>
           </div>
@@ -229,7 +160,7 @@ export default function LandingPage() {
 
             <div style={{ padding: 18, borderRadius: 18, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 14 }}>
               <div style={{ color: 'rgba(232,241,255,0.38)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 10 }}>
-                Example input
+                {t.landingPage.previewExampleInput}
               </div>
               <div style={{ color: 'rgba(245,249,255,0.85)', fontSize: 15, lineHeight: 1.7 }}>
                 {preview.input}
@@ -257,16 +188,12 @@ export default function LandingPage() {
         <div className="page-wrap surface-card fade-up" style={{ padding: 22 }}>
           <div className="auto-grid">
             <div>
-              <div className="section-label" style={{ marginBottom: 10 }}>Why it feels easier</div>
+              <div className="section-label" style={{ marginBottom: 10 }}>{t.landingPage.whyLabel}</div>
               <div style={{ color: 'white', fontSize: 22, fontWeight: 800, lineHeight: 1.3 }}>
-                Built around real tasks, not blank prompts.
+                {t.landingPage.whyTitle}
               </div>
             </div>
-            {[
-              'Clear results instead of long AI rambles',
-              'Copy, download, or draft in a couple of clicks',
-              'Same clean flow across every tool',
-            ].map(item => (
+            {t.landingPage.whyPoints.map(item => (
               <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'rgba(232,241,255,0.74)', fontSize: 14 }}>
                 <Shield size={16} color="#58A6FF" />
                 <span>{item}</span>
@@ -279,10 +206,10 @@ export default function LandingPage() {
       <section style={{ padding: '0 16px 72px' }}>
         <div className="page-wrap">
           <div style={{ marginBottom: 24 }}>
-            <div className="section-label" style={{ marginBottom: 10 }}>Tools</div>
-            <h2 style={{ fontSize: 'clamp(28px,4vw,42px)', marginBottom: 10 }}>Everything important is one click away.</h2>
+            <div className="section-label" style={{ marginBottom: 10 }}>{t.landingPage.toolsLabel}</div>
+            <h2 style={{ fontSize: 'clamp(28px,4vw,42px)', marginBottom: 10 }}>{t.landingPage.toolsTitle}</h2>
             <p className="section-copy" style={{ maxWidth: 620 }}>
-              Each tool has one job. That keeps the UI clean and keeps the output more useful.
+              {t.landingPage.toolsSubtitle}
             </p>
           </div>
 
@@ -305,7 +232,7 @@ export default function LandingPage() {
                     ))}
                   </div>
                   <button className="secondary-btn" onClick={() => router.push('/dashboard')}>
-                    Open tool
+                    {t.dashOpen}
                     <ArrowRight size={15} />
                   </button>
                 </div>
@@ -318,10 +245,10 @@ export default function LandingPage() {
       <section id="faq" style={{ padding: '0 16px 84px' }}>
         <div className="page-wrap two-column" style={{ alignItems: 'start', gap: 28 }}>
           <div>
-            <div className="section-label" style={{ marginBottom: 10 }}>FAQ</div>
-            <h2 style={{ fontSize: 'clamp(28px,4vw,40px)', marginBottom: 12 }}>Questions people ask before they try it.</h2>
+            <div className="section-label" style={{ marginBottom: 10 }}>{t.faq}</div>
+            <h2 style={{ fontSize: 'clamp(28px,4vw,40px)', marginBottom: 12 }}>{t.landingPage.faqTitle}</h2>
             <p className="section-copy">
-              HandleIt is designed to be simple on purpose. Here are the basics before you jump in.
+              {t.landingPage.faqSubtitle}
             </p>
           </div>
 
@@ -351,17 +278,17 @@ export default function LandingPage() {
           <div style={{ width: 72, height: 72, borderRadius: 24, margin: '0 auto 18px', background: 'rgba(88,166,255,0.14)', border: '1px solid rgba(88,166,255,0.24)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <HandleItRobotLogo size={72} />
           </div>
-          <h2 style={{ fontSize: 'clamp(28px,4vw,40px)', marginBottom: 12 }}>Handle the admin. Keep your energy.</h2>
+          <h2 style={{ fontSize: 'clamp(28px,4vw,40px)', marginBottom: 12 }}>{t.landingPage.finalTitle}</h2>
           <p className="section-copy" style={{ maxWidth: 520, margin: '0 auto 24px' }}>
-            Start with the free plan, try the tool you need most, and keep the workflow simple.
+            {t.landingPage.finalSubtitle}
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button className="primary-btn" onClick={() => router.push('/dashboard')}>
-              Start free
+              {t.startFree.replace(' →', '')}
               <ArrowRight size={16} />
             </button>
             <button className="secondary-btn" onClick={() => router.push('/pricing')}>
-              Compare plans
+              {t.landingPage.comparePlans}
             </button>
           </div>
         </div>
@@ -371,10 +298,10 @@ export default function LandingPage() {
         <div className="page-wrap" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', color: 'rgba(232,241,255,0.4)', fontSize: 12 }}>
           <div>© {new Date().getFullYear()} HandleIt</div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <button className="ghost-btn" onClick={() => router.push('/pricing')}>Pricing</button>
-            <button className="ghost-btn" onClick={() => router.push('/login')}>Login</button>
-            <button className="ghost-btn" onClick={() => router.push('/legal/terms')}>Terms</button>
-            <button className="ghost-btn" onClick={() => router.push('/legal/privacy')}>Privacy</button>
+            <button className="ghost-btn" onClick={() => router.push('/pricing')}>{t.pricing}</button>
+            <button className="ghost-btn" onClick={() => router.push('/login')}>{t.logIn}</button>
+            <button className="ghost-btn" onClick={() => router.push('/legal/terms')}>{t.terms}</button>
+            <button className="ghost-btn" onClick={() => router.push('/legal/privacy')}>{t.privacy}</button>
           </div>
         </div>
       </footer>

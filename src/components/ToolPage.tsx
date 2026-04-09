@@ -48,12 +48,8 @@ interface StoredLetterResult {
 
 interface ToolConfig {
   id: ToolId;
-  name: string;
-  desc: string;
   color: string;
   glow: string;
-  placeholder: string;
-  companyTypes?: string[];
   allowFileUpload?: boolean;
 }
 
@@ -97,8 +93,34 @@ function readStoredLetterResult(userId: string | null): GeneratedResult | null {
 export function ToolPage({ tool }: Props) {
   const router = useRouter();
   const { t } = useLanguage();
+  const toolCopy = tool.id === 'form'
+    ? {
+        name: t.formName,
+        desc: t.formDesc,
+        placeholder: t.formPlaceholder,
+        accent: t.tools.form.accent,
+        bestFor: t.tools.form.bestFor,
+        companyTypes: undefined,
+      }
+    : tool.id === 'letter'
+    ? {
+        name: t.letterName,
+        desc: t.letterDesc,
+        placeholder: t.letterPlaceholder,
+        accent: t.tools.letter.accent,
+        bestFor: t.tools.letter.bestFor,
+        companyTypes: t.tools.companyTypes,
+      }
+    : {
+        name: t.replyName,
+        desc: t.replyDesc,
+        placeholder: t.replyPlaceholder,
+        accent: t.tools.reply.accent,
+        bestFor: t.tools.reply.bestFor,
+        companyTypes: undefined,
+      };
   const [input, setInput] = useState('');
-  const [company, setCompany] = useState('Airline');
+  const [company, setCompany] = useState(toolCopy.companyTypes?.[0] ?? '');
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -143,12 +165,12 @@ export function ToolPage({ tool }: Props) {
 
     const mime = (file.type && ACCEPTED_TYPES[file.type]) ? file.type : (extToMime[ext] ?? '');
     if (!mime || !ACCEPTED_TYPES[mime]) {
-      setFileError('Unsupported file type. Please upload PDF, image, Word, or TXT.');
+      setFileError(t.fileTypeError);
       return;
     }
 
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      setFileError(`File is too large. Max size is ${MAX_FILE_MB} MB.`);
+      setFileError(t.fileSizeError);
       return;
     }
 
@@ -158,9 +180,9 @@ export function ToolPage({ tool }: Props) {
       setFileData(base64);
       setFileMime(mime);
     } catch {
-      setFileError('Could not read file. Please try again.');
+      setFileError(t.toolPage.fileReadError);
     }
-  }, []);
+  }, [t]);
 
   const clearFile = () => {
     setUploadedFile(null);
@@ -189,6 +211,14 @@ export function ToolPage({ tool }: Props) {
     element.addEventListener('scroll', onScroll);
     return () => element.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    const companyTypes = toolCopy.companyTypes as readonly string[] | undefined;
+    if (tool.id !== 'letter' || !companyTypes?.length) return;
+    if (!companyTypes.includes(company)) {
+      setCompany(companyTypes[0]);
+    }
+  }, [company, tool.id, toolCopy.companyTypes]);
 
   useEffect(() => {
     if (tool.id !== 'letter') return;
@@ -289,9 +319,9 @@ export function ToolPage({ tool }: Props) {
       <div className="page-wrap" style={{ padding: '34px 0 88px' }}>
         <div className="two-column fade-up" style={{ alignItems: 'start', gap: 24, marginBottom: 18 }}>
           <div>
-            <div className="section-label" style={{ marginBottom: 10 }}>{tool.name}</div>
-            <h1 style={{ fontSize: 'clamp(30px,4vw,44px)', marginBottom: 12 }}>{tool.name}</h1>
-            <p className="section-copy" style={{ maxWidth: 560 }}>{tool.desc}</p>
+            <div className="section-label" style={{ marginBottom: 10 }}>{toolCopy.name}</div>
+            <h1 style={{ fontSize: 'clamp(30px,4vw,44px)', marginBottom: 12 }}>{toolCopy.name}</h1>
+            <p className="section-copy" style={{ maxWidth: 560 }}>{toolCopy.desc}</p>
           </div>
 
           <div className="surface-card fade-up fade-up-delay-1" style={{ padding: 20 }}>
@@ -300,24 +330,24 @@ export function ToolPage({ tool }: Props) {
                 <Icon size={22} color={tool.color} />
               </div>
               <div>
-                <div style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>{tool.name}</div>
+                <div style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>{toolCopy.name}</div>
                 <div style={{ color: 'rgba(232,241,255,0.5)', fontSize: 13 }}>
-                  {tool.id === 'letter' ? 'Best for refunds, complaints, and service issues.' : tool.id === 'form' ? 'Best for tax, legal, and admin forms.' : 'Best for stressful texts and emails.'}
+                  {toolCopy.bestFor}
                 </div>
               </div>
             </div>
             <div style={{ color: 'rgba(232,241,255,0.64)', fontSize: 14, lineHeight: 1.7 }}>
-              Paste your situation in plain English. The app is designed to do the structured formatting for you.
+              {t.toolPage.helperText}
             </div>
           </div>
         </div>
 
         <div className="surface-card fade-up fade-up-delay-1" style={{ padding: 24, marginBottom: 18 }}>
-          {tool.id === 'letter' && tool.companyTypes && (
+          {tool.id === 'letter' && toolCopy.companyTypes && (
             <div style={{ marginBottom: 20 }}>
-              <div className="section-label" style={{ marginBottom: 12 }}>Company type</div>
+              <div className="section-label" style={{ marginBottom: 12 }}>{t.toolPage.companyType}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {tool.companyTypes.map(type => {
+                {toolCopy.companyTypes.map(type => {
                   const selected = company === type;
                   return (
                     <button
@@ -344,7 +374,7 @@ export function ToolPage({ tool }: Props) {
 
           {tool.allowFileUpload && (
             <div style={{ marginBottom: 18 }}>
-              <div className="section-label" style={{ marginBottom: 12 }}>Optional file</div>
+              <div className="section-label" style={{ marginBottom: 12 }}>{t.toolPage.optionalFile}</div>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -390,10 +420,10 @@ export function ToolPage({ tool }: Props) {
                     <Upload size={18} color={tool.color} />
                   </div>
                   <div style={{ color: 'white', fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
-                    Drop a file here or click to browse
+                    {t.toolPage.dropFile}
                   </div>
                   <div style={{ color: 'rgba(232,241,255,0.42)', fontSize: 12 }}>
-                    PDF, Word, TXT, JPG, PNG · max {MAX_FILE_MB} MB
+                    {t.toolPage.fileFormats.replace('{{size}}', String(MAX_FILE_MB))}
                   </div>
                 </button>
               )}
@@ -402,11 +432,11 @@ export function ToolPage({ tool }: Props) {
             </div>
           )}
 
-          <div className="section-label" style={{ marginBottom: 12 }}>Describe the situation</div>
+          <div className="section-label" style={{ marginBottom: 12 }}>{t.toolPage.describeSituation}</div>
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder={uploadedFile ? t.addNotes : tool.placeholder}
+            placeholder={uploadedFile ? t.addNotes : toolCopy.placeholder}
             rows={uploadedFile ? 4 : 7}
             className="text-area"
             style={{ resize: 'vertical', minHeight: uploadedFile ? 128 : 180, marginBottom: 16 }}
@@ -420,7 +450,7 @@ export function ToolPage({ tool }: Props) {
             {(result || input || uploadedFile) && (
               <button className="secondary-btn" onClick={() => { setInput(''); clearFile(); clearCurrentResult(); }}>
                 <RotateCcw size={16} />
-                Clear
+                {t.toolPage.clear}
               </button>
             )}
           </div>
@@ -444,12 +474,12 @@ export function ToolPage({ tool }: Props) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ color: uses_remaining <= 1 ? '#F4B860' : 'rgba(232,241,255,0.72)', fontWeight: 700, fontSize: 14 }}>
                     {uses_remaining <= 0
-                      ? 'You have used all free uses.'
+                      ? t.toolPage.allFreeUses
                       : uses_remaining === 1
-                      ? '1 free use left.'
-                      : `${uses_remaining} free uses left.`}
+                      ? t.toolPage.oneFreeUse
+                      : t.toolPage.manyFreeUses.replace('{{count}}', String(uses_remaining))}
                   </span>
-                  <button className="secondary-btn" onClick={() => router.push('/pricing')}>Upgrade</button>
+                  <button className="secondary-btn" onClick={() => router.push('/pricing')}>{t.toolPage.upgrade}</button>
                 </div>
               </div>
             )}
