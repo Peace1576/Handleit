@@ -13,6 +13,7 @@ type StatePayload = {
   state: string;
   next: string;
   redirectUri: string;
+  userId: string;
 };
 
 function errorRedirect(req: NextRequest, next: string, message: string) {
@@ -43,9 +44,6 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return errorRedirect(req, payload.next, 'gmail_connect_failed');
-  }
 
   try {
     const tokens = await exchangeCodeForTokens(code, payload.redirectUri);
@@ -56,7 +54,7 @@ export async function GET(req: NextRequest) {
     const profile = await fetchGoogleProfile(tokens.access_token);
     const admin = createServiceRoleClient();
     await admin.from('gmail_connections').upsert({
-      user_id: user.id,
+      user_id: payload.userId,
       google_email: profile.email,
       google_name: profile.name,
       encrypted_refresh_token: encryptRefreshToken(tokens.refresh_token),
@@ -66,7 +64,11 @@ export async function GET(req: NextRequest) {
       onConflict: 'user_id',
     });
 
-    const res = NextResponse.redirect(new URL(payload.next, req.url));
+    const redirectTarget = user
+      ? new URL(payload.next, req.url)
+      : new URL(`/login?redirectedFrom=${encodeURIComponent(payload.next)}&gmail_connected=true`, req.url);
+
+    const res = NextResponse.redirect(redirectTarget);
     res.cookies.set({
       name: getStateCookieName(),
       value: '',

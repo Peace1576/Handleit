@@ -71,8 +71,13 @@ function LoginForm() {
     return null;
   });
   const [success, setSuccess] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(() => {
+    return params.get('gmail_connected') === 'true'
+      ? 'Gmail connected. Sign in once more to continue to your complaint letter.'
+      : null;
+  });
 
-  const reset = () => { setError(null); setSuccess(null); };
+  const reset = () => { setError(null); setSuccess(null); setBanner(null); };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,6 +217,11 @@ function LoginForm() {
                 </div>
 
                 {/* ── Google ── */}
+                {banner && (
+                  <div style={{ background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 12, padding: '10px 14px', color: '#86EFAC', fontSize: 13, lineHeight: 1.5, marginBottom: 14 }}>
+                    {banner}
+                  </div>
+                )}
                 <button
                   onClick={handleGoogle}
                   style={{ width: '100%', padding: '13px 16px', borderRadius: 18, fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', marginBottom: 18, fontFamily: 'inherit' }}
