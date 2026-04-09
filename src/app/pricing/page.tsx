@@ -7,6 +7,7 @@ import { HandleItRobotLogo } from '@/components/Logo';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatCopy } from '@/lib/formatCopy';
+import { reportGoogleAdsConversion } from '@/lib/googleAds';
 import { isLifetimeDealActive, lifetimeDaysLeft } from '@/lib/launch';
 import type { PaddlePlan } from '@/types';
 import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
@@ -51,6 +52,10 @@ const PLANS = [
     featured: true,
   },
 ];
+
+const GOOGLE_ADS_PURCHASE_CONVERSION_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_CONVERSION_ID ??
+  'AW-18072726819/DVhQCOqF1JgcEKPa36lD';
 
 export default function PricingPage() {
   const router = useRouter();
@@ -112,21 +117,32 @@ export default function PricingPage() {
     }
 
     try {
-      window.Paddle.Checkout.open({
-        items: [{ priceId, quantity: 1 }],
-        customer: { email: user.email },
-        customData: { user_id: user.id },
-        successUrl: `${window.location.origin}/dashboard?upgraded=true`,
-        settings: {
-          displayMode: 'overlay',
-          theme: 'dark',
-          locale: localStorage.getItem('handleit_language') ?? 'en',
+      reportGoogleAdsConversion({
+        sendTo: GOOGLE_ADS_PURCHASE_CONVERSION_ID,
+        onComplete: () => {
+          try {
+            window.Paddle.Checkout.open({
+              items: [{ priceId, quantity: 1 }],
+              customer: { email: user.email },
+              customData: { user_id: user.id },
+              successUrl: `${window.location.origin}/dashboard?upgraded=true`,
+              settings: {
+                displayMode: 'overlay',
+                theme: 'dark',
+                locale: localStorage.getItem('handleit_language') ?? 'en',
+              },
+            });
+          } catch (error) {
+            console.error('Paddle checkout error:', error);
+            alert(t.pricingPage.alerts.checkoutFailed);
+          } finally {
+            setLoading(null);
+          }
         },
       });
     } catch (error) {
       console.error('Paddle checkout error:', error);
       alert(t.pricingPage.alerts.checkoutFailed);
-    } finally {
       setLoading(null);
     }
   };
