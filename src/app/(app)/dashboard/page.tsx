@@ -7,7 +7,7 @@ import { Particles } from '@/components/Particles';
 import { UsageBar } from '@/components/UsageBar';
 import { HandleItRobotLogo } from '@/components/Logo';
 import { trackGoogleAdsConversion } from '@/lib/googleAds';
-import { ClipboardList, Mail, MessageCircle, ArrowRight, Settings, History, LogOut, Sparkles } from 'lucide-react';
+import { ClipboardList, Mail, MessageCircle, ArrowRight, Settings, History, LogOut, Menu, Sparkles, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const GOOGLE_ADS_PURCHASE_CONVERSION_ID =
@@ -19,8 +19,10 @@ function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [showUpgraded, setShowUpgraded] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useLanguage();
 
   const TOOLS = [
@@ -59,6 +61,23 @@ function DashboardContent() {
     return () => element.removeEventListener('scroll', onScroll);
   }, []);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!mobileMenuRef.current?.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [mobileMenuOpen]);
+
   const handleSignOut = async () => {
     const supabase = createClient();
     localStorage.removeItem('handleit_letter_result_v1');
@@ -81,11 +100,39 @@ function DashboardContent() {
             <div style={{ fontSize: 18, fontWeight: 800 }}><span style={{ color: '#58A6FF' }}>Handle</span>It</div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <div className="desktop-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <UsageBar />
             <button className="secondary-btn" onClick={() => router.push('/history')}><History size={15} /> {t.history}</button>
             <button className="secondary-btn" onClick={() => router.push('/settings')}><Settings size={15} /> {t.settings}</button>
             <button className="secondary-btn" onClick={handleSignOut}><LogOut size={15} /> {t.signOut}</button>
+          </div>
+
+          <div className="mobile-nav-shell" ref={mobileMenuRef}>
+            <button
+              className="mobile-nav-toggle"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen(prev => !prev)}
+            >
+              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+
+            {mobileMenuOpen && (
+              <div className="mobile-nav-menu">
+                <div className="mobile-nav-status">
+                  <UsageBar />
+                </div>
+                <button className="secondary-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); router.push('/history'); }}>
+                  <History size={15} /> {t.history}
+                </button>
+                <button className="secondary-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); router.push('/settings'); }}>
+                  <Settings size={15} /> {t.settings}
+                </button>
+                <button className="secondary-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); handleSignOut(); }}>
+                  <LogOut size={15} /> {t.signOut}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

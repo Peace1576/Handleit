@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Particles } from '@/components/Particles';
 import { HandleItRobotLogo } from '@/components/Logo';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ClipboardList, Mail, MessageCircle, ArrowRight, CheckCircle2, Shield, Sparkles } from 'lucide-react';
+import { ClipboardList, Mail, Menu, MessageCircle, ArrowRight, CheckCircle2, Shield, Sparkles, X } from 'lucide-react';
 import { isLifetimeDealActive } from '@/lib/launch';
 
 export default function LandingPage() {
@@ -14,6 +14,8 @@ export default function LandingPage() {
   const [activeTab, setActiveTab] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const lifetimeActive = isLifetimeDealActive();
   const PREVIEW_TABS = [
     { ...t.landingPage.previewTabs[0], color: '#58A6FF' },
@@ -41,6 +43,23 @@ export default function LandingPage() {
     return () => window.clearInterval(timer);
   }, [PREVIEW_TABS.length]);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!mobileMenuRef.current?.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [mobileMenuOpen]);
+
   const preview = PREVIEW_TABS[activeTab];
 
   return (
@@ -58,16 +77,45 @@ export default function LandingPage() {
             style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'white' }}
           >
             <HandleItRobotLogo size={46} />
-            <span style={{ fontSize: 18, fontWeight: 800 }}>
+            <span className="landing-nav-wordmark" style={{ fontSize: 18, fontWeight: 800 }}>
               <span style={{ color: '#58A6FF' }}>Handle</span>It
             </span>
           </button>
 
-          <div className="landing-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <div className="desktop-nav-actions landing-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button className="ghost-btn landing-nav-link" onClick={() => router.push('/pricing')}>{t.pricing}</button>
             <button className="ghost-btn landing-nav-link" onClick={() => document.querySelector('#faq')?.scrollIntoView({ behavior: 'smooth' })}>{t.faq}</button>
             <button className="secondary-btn landing-nav-cta" onClick={() => router.push('/login')}>{t.logIn}</button>
             <button className="primary-btn landing-nav-cta" onClick={() => router.push('/dashboard')}>{t.startFree.replace(' →', '')} <ArrowRight size={16} /></button>
+          </div>
+
+          <div className="mobile-nav-shell" ref={mobileMenuRef}>
+            <button
+              className="mobile-nav-toggle"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen(prev => !prev)}
+            >
+              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+
+            {mobileMenuOpen && (
+              <div className="mobile-nav-menu">
+                <button className="ghost-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); router.push('/pricing'); }}>
+                  {t.pricing}
+                </button>
+                <button className="ghost-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); document.querySelector('#faq')?.scrollIntoView({ behavior: 'smooth' }); }}>
+                  {t.faq}
+                </button>
+                <button className="secondary-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); router.push('/login'); }}>
+                  {t.logIn}
+                </button>
+                <button className="primary-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); router.push('/dashboard'); }}>
+                  {t.startFree.replace(' →', '')}
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
