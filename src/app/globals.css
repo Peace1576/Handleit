@@ -231,6 +231,19 @@ select option {
   cursor: pointer;
 }
 
+.landing-nav {
+  flex-wrap: nowrap;
+}
+
+.landing-nav-brand {
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.landing-nav-actions {
+  min-width: 0;
+}
+
 .nav-bubble,
 .topbar {
   background: rgba(7, 16, 28, 0.8);
@@ -495,5 +508,27 @@ select option {
 
   .section-copy {
     font-size: 15px;
+  }
+
+  .landing-nav {
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .landing-nav-actions {
+    flex: 1 1 auto;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  .landing-nav-link {
+    display: none;
+  }
+
+  .landing-nav-cta {
+    width: 100%;
+    padding: 12px 14px;
   }
 }

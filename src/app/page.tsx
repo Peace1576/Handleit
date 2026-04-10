@@ -49,10 +49,11 @@ export default function LandingPage() {
 
       <div style={{ position: 'sticky', top: 16, zIndex: 50, padding: '0 16px', pointerEvents: 'none' }}>
         <div
-          className={`nav-bubble specular page-wrap ${scrolled ? 'tab-bar-compact' : 'tab-bar-expanded'}`}
+          className={`nav-bubble specular page-wrap landing-nav ${scrolled ? 'tab-bar-compact' : 'tab-bar-expanded'}`}
           style={{ pointerEvents: 'all', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
         >
           <button
+            className="landing-nav-brand"
             onClick={() => router.push('/')}
             style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'white' }}
           >
@@ -62,11 +63,11 @@ export default function LandingPage() {
             </span>
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <button className="ghost-btn" onClick={() => router.push('/pricing')}>{t.pricing}</button>
-            <button className="ghost-btn" onClick={() => document.querySelector('#faq')?.scrollIntoView({ behavior: 'smooth' })}>{t.faq}</button>
-            <button className="secondary-btn" onClick={() => router.push('/login')}>{t.logIn}</button>
-            <button className="primary-btn" onClick={() => router.push('/dashboard')}>{t.startFree.replace(' →', '')} <ArrowRight size={16} /></button>
+          <div className="landing-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button className="ghost-btn landing-nav-link" onClick={() => router.push('/pricing')}>{t.pricing}</button>
+            <button className="ghost-btn landing-nav-link" onClick={() => document.querySelector('#faq')?.scrollIntoView({ behavior: 'smooth' })}>{t.faq}</button>
+            <button className="secondary-btn landing-nav-cta" onClick={() => router.push('/login')}>{t.logIn}</button>
+            <button className="primary-btn landing-nav-cta" onClick={() => router.push('/dashboard')}>{t.startFree.replace(' →', '')} <ArrowRight size={16} /></button>
           </div>
         </div>
       </div>
