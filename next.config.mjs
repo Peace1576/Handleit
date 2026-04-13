@@ -1,5 +1,69 @@
 /** @type {import('next').NextConfig} */
 
+const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://*.supabase.co';
+
+const csp = {
+  scriptSrc: [
+    "'self'",
+    "'unsafe-inline'",
+    "'unsafe-eval'",
+    'https://cdn.paddle.com',
+    'https://public.profitwell.com',
+    'https://us.i.posthog.com',
+    'https://app.posthog.com',
+    'https://www.googletagmanager.com',
+    'https://www.googleadservices.com',
+    'https://www.google-analytics.com',
+    'https://www.google.com',
+    'https://googleads.g.doubleclick.net',
+    'https://pagead2.googlesyndication.com',
+  ],
+  styleSrc: [
+    "'self'",
+    "'unsafe-inline'",
+    'https://fonts.googleapis.com',
+    'https://cdn.paddle.com',
+  ],
+  fontSrc: [
+    "'self'",
+    'https://fonts.gstatic.com',
+  ],
+  imgSrc: [
+    "'self'",
+    'data:',
+    'https://images.unsplash.com',
+    'https://www.googletagmanager.com',
+    'https://www.google.com',
+    'https://google.com',
+    'https://www.googleadservices.com',
+    'https://googleads.g.doubleclick.net',
+    'https://pagead2.googlesyndication.com',
+    'https://www.google-analytics.com',
+  ],
+  connectSrc: [
+    "'self'",
+    supabaseOrigin,
+    'https://api.groq.com',
+    'https://sandbox-api.paddle.com',
+    'https://api.paddle.com',
+    'https://us.i.posthog.com',
+    'https://app.posthog.com',
+    'https://www.googletagmanager.com',
+    'https://www.google-analytics.com',
+    'https://www.googleadservices.com',
+    'https://googleads.g.doubleclick.net',
+    'https://www.google.com',
+    'https://google.com',
+    'https://pagead2.googlesyndication.com',
+  ],
+  frameSrc: [
+    'https://sandbox-buy.paddle.com',
+    'https://buy.paddle.com',
+    'https://customer.paddle.com',
+    'https://www.googletagmanager.com',
+  ],
+};
+
 const securityHeaders = [
   // Prevent clickjacking — nobody can embed HandleIt in an iframe
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -18,18 +82,18 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      // Scripts: self + Paddle checkout + PostHog analytics + Google tag
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com https://us.i.posthog.com https://app.posthog.com https://www.googletagmanager.com https://www.googleadservices.com https://www.google-analytics.com",
-      // Styles: self + Google Fonts + inline (needed for styled-jsx)
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      // Scripts: app code + Paddle/Retain + analytics/ad tags
+      `script-src ${csp.scriptSrc.join(' ')}`,
+      // Styles: app styles + Google Fonts + Paddle checkout stylesheet
+      `style-src ${csp.styleSrc.join(' ')}`,
       // Fonts
-      "font-src 'self' https://fonts.gstatic.com",
-      // Images: self + Unsplash + data URIs (used for file preview)
-      "img-src 'self' data: https://images.unsplash.com https://www.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google-analytics.com",
+      `font-src ${csp.fontSrc.join(' ')}`,
+      // Images: previews + analytics/ad beacons
+      `img-src ${csp.imgSrc.join(' ')}`,
       // API connections: self + Supabase + Groq + Paddle + PostHog + Google tag
-      `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://*.supabase.co'} https://api.groq.com https://sandbox-api.paddle.com https://api.paddle.com https://us.i.posthog.com https://app.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://googleads.g.doubleclick.net https://www.googleadservices.com`,
-      // Paddle checkout iframe
-      "frame-src https://sandbox-buy.paddle.com https://buy.paddle.com https://customer.paddle.com",
+      `connect-src ${csp.connectSrc.join(' ')}`,
+      // Paddle checkout iframe + Google tag helper frame
+      `frame-src ${csp.frameSrc.join(' ')}`,
       // No plugins
       "object-src 'none'",
       // Base URI locked to self
