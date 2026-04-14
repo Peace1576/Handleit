@@ -11,7 +11,7 @@ export default function RefundPolicyPage() {
 
       <section>
         <h2>1. Free Plan</h2>
-        <p>The free plan includes 5 total uses with no credit card required. There is nothing to cancel or refund.</p>
+        <p>The free plan includes 3 total uses with no credit card required. There is nothing to cancel or refund.</p>
       </section>
 
       <section>

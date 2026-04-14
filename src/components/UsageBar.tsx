@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { formatCopy } from '@/lib/formatCopy';
 import { useRouter } from 'next/navigation';
 
-const FREE_TOTAL = 5;
+const FREE_TOTAL = 3;
 
 export function UsageBar() {
   const { plan, uses_remaining, loading } = useUsage();

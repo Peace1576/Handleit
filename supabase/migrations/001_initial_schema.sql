@@ -9,7 +9,7 @@ create table if not exists public.profiles (
   user_id            uuid not null unique references auth.users(id) on delete cascade,
   display_name       text,
   plan               text not null default 'free' check (plan in ('free','pro','lifetime')),
-  uses_remaining     int  not null default 5,
+  uses_remaining     int  not null default 3,
   stripe_customer_id text unique,
   marketing_consent  boolean not null default false,
   created_at         timestamptz not null default now(),

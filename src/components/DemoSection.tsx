@@ -40,7 +40,7 @@ const SECTION_TEXT = {
   ],
   cta: {
     heading: 'Try HandleIt Free',
-    sub:     '5 Free Uses — No Card Required',
+    sub:     '3 Free Uses — No Card Required',
     button:  'Start Free →',
     href:    '/login',
   },

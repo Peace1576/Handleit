@@ -35,7 +35,7 @@ export default function TermsPage() {
 
       <section>
         <h2>4. Subscription Plans and Payment</h2>
-        <p><strong>Free Plan:</strong> 5 total uses across all tools. No credit card required.</p>
+        <p><strong>Free Plan:</strong> 3 total uses across all tools. No credit card required.</p>
         <p><strong>Pro Monthly:</strong> Unlimited uses billed at $17/month.</p>
         <p><strong>Pro Annual:</strong> Unlimited uses billed at $149/year.</p>
         <p><strong>Lifetime:</strong> One-time payment of $97 for unlimited lifetime access.</p>
