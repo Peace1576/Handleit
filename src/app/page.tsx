@@ -233,6 +233,55 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── What renters discover ─────────────────────────────────────── */}
+      <section style={{ padding: '0 16px 56px' }}>
+        <div className="page-wrap">
+          <div className="surface-card fade-up" style={{ padding: '24px 26px' }}>
+            <div style={{ color: 'rgba(232,241,255,0.42)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 18 }}>
+              What Form Explainer commonly finds
+            </div>
+            <div style={{ display: 'grid', gap: 18 }}>
+              {([
+                {
+                  clause: '"Tenant shall forfeit deposit and pay two months\' rent as liquidated damages upon early termination."',
+                  finding: 'Above standard — most leases cap this at one month. Ask for a job-relocation exception before signing.',
+                },
+                {
+                  clause: '"Landlord may enter the premises with 12 hours\' notice for inspection or maintenance."',
+                  finding: 'Below the legal minimum in most states (24–48 hours). Get 24 hours notice added in writing.',
+                },
+                {
+                  clause: '"This lease automatically renews for an additional 12-month term unless cancelled 60 days prior."',
+                  finding: 'Easy to miss and expensive to miss. Negotiate 30 days — 60 is landlord-friendly, not standard.',
+                },
+              ] as { clause: string; finding: string }[]).map(({ clause, finding }) => (
+                <div key={clause} style={{ display: 'grid', gap: 8 }}>
+                  <div style={{ color: 'rgba(245,249,255,0.52)', fontSize: 13, background: 'rgba(255,255,255,0.04)', padding: '8px 12px', borderRadius: 10, borderLeft: '2px solid rgba(255,255,255,0.12)', lineHeight: 1.6 }}>
+                    {clause}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <CheckCircle2 size={15} color="#34D399" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span style={{ color: 'rgba(245,249,255,0.80)', fontSize: 14, lineHeight: 1.6 }}>{finding}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ color: 'rgba(232,241,255,0.44)', fontSize: 13 }}>
+                These clause types appear in leases everywhere. Most renters never catch them.
+              </span>
+              <button
+                className="primary-btn"
+                style={{ fontSize: 13, padding: '8px 16px', whiteSpace: 'nowrap' }}
+                onClick={() => router.push('/dashboard')}
+              >
+                Check my lease <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section style={{ padding: '0 16px 72px' }}>
         <div className="page-wrap surface-card fade-up" style={{ padding: 22 }}>
           <div className="auto-grid">
