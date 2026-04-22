@@ -8,6 +8,41 @@ const SUPPORTED_CODES = new Set<SupportedLanguageCode>(
   LANGUAGES.map(language => language.code as SupportedLanguageCode)
 );
 
+const MOJIBAKE_MARKERS = /(?:Ã|Â|â|ð|Ø|Ù|à¤|å|æ|ç|ï¼|�)/;
+
+function repairMojibake(value: string): string {
+  if (!MOJIBAKE_MARKERS.test(value)) return value;
+
+  const codePoints = Array.from(value, character => character.charCodeAt(0));
+  if (codePoints.some(codePoint => codePoint > 255)) {
+    return value;
+  }
+
+  try {
+    return new TextDecoder('utf-8').decode(Uint8Array.from(codePoints));
+  } catch {
+    return value;
+  }
+}
+
+function repairCopy<T>(value: T): T {
+  if (typeof value === 'string') {
+    return repairMojibake(value) as T;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(item => repairCopy(item)) as T;
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [key, repairCopy(nestedValue)])
+    ) as T;
+  }
+
+  return value;
+}
+
 export function getSupportedLanguage(code?: string | null): SupportedLanguageCode | null {
   if (!code) return null;
   const normalized = code.toLowerCase();
@@ -25,15 +60,15 @@ export function resolveLanguage(code?: string | null): SupportedLanguageCode {
 export function getAppTranslations(code?: string | null): AppTranslations {
   const resolved = resolveLanguage(code);
 
-  return {
+  return repairCopy({
     ...TRANSLATIONS.en,
     ...UI_COPY.en,
     ...TRANSLATIONS[resolved],
     ...UI_COPY[resolved],
-  } as AppTranslations;
+  } as AppTranslations);
 }
 
 export function getLanguageMeta(code?: string | null) {
   const resolved = resolveLanguage(code);
-  return LANGUAGES.find(language => language.code === resolved) ?? LANGUAGES[0];
+  return repairCopy(LANGUAGES.find(language => language.code === resolved) ?? LANGUAGES[0]);
 }

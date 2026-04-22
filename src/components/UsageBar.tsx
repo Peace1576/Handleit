@@ -3,9 +3,8 @@
 import { useUsage } from '@/hooks/useUsage';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatCopy } from '@/lib/formatCopy';
+import { FREE_PLAN_USES } from '@/lib/plans';
 import { useRouter } from 'next/navigation';
-
-const FREE_TOTAL = 3;
 
 export function UsageBar() {
   const { plan, uses_remaining, loading } = useUsage();
@@ -32,7 +31,7 @@ export function UsageBar() {
 
   // Free plan
   const remaining = uses_remaining ?? 0;
-  const pct = Math.max(0, (remaining / FREE_TOTAL) * 100);
+  const pct = Math.max(0, (remaining / FREE_PLAN_USES) * 100);
   const isEmpty = remaining <= 0;
   const isLow = remaining === 1;
 
@@ -57,7 +56,7 @@ export function UsageBar() {
       title={t.usageBar.upgradeTitle}
     >
       <span style={{ fontSize: 11, fontWeight: 700, color: textColor, whiteSpace: 'nowrap' }}>
-        {isEmpty ? t.usageBar.upgradeToContinue : formatCopy(t.usageBar.usesLeft, { remaining, total: FREE_TOTAL })}
+        {isEmpty ? t.usageBar.upgradeToContinue : formatCopy(t.usageBar.usesLeft, { remaining, total: FREE_PLAN_USES })}
       </span>
       <div style={{ width: '100%', height: 6, borderRadius: 99, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${pct}%`, borderRadius: 99, background: barColor, transition: 'width 0.4s ease' }} />

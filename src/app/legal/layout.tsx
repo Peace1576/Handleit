@@ -1,10 +1,17 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { HandleItRobotLogo } from '@/components/Logo';
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
+
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a1a', color: 'white', fontFamily: "'Inter', -apple-system, sans-serif" }}>
       {/* Nav */}
@@ -24,7 +31,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
       {/* Footer */}
       <footer style={{ padding: '24px 16px', borderTop: '1px solid rgba(255,255,255,0.07)', textAlign: 'center' }}>
         <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>
-          © {new Date().getFullYear()} HandleIt · All rights reserved
+          &copy; {currentYear ?? ''} HandleIt - All rights reserved
         </p>
       </footer>
     </div>

@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatCopy } from '@/lib/formatCopy';
 import { isLifetimeDealActive, lifetimeDaysLeft } from '@/lib/launch';
+import { FREE_PLAN_USES } from '@/lib/plans';
 import type { PaddlePlan } from '@/types';
 import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 
@@ -24,8 +25,8 @@ const PLANS = [
     title: 'Free',
     priceMonthly: '$0',
     priceAnnual: '$0',
-    detailMonthly: '3 total uses',
-    detailAnnual: '3 total uses',
+    detailMonthly: `${FREE_PLAN_USES} total uses`,
+    detailAnnual: `${FREE_PLAN_USES} total uses`,
     points: ['Try all 3 tools', 'No card required', 'Good for first-time testing'],
     accent: '#58A6FF',
   },
@@ -58,8 +59,14 @@ export default function PricingPage() {
   const [annual, setAnnual] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [paddleReady, setPaddleReady] = useState(false);
-  const lifetimeActive = isLifetimeDealActive();
-  const daysLeft = lifetimeDaysLeft();
+  const [lifetimeActive, setLifetimeActive] = useState(false);
+  const [daysLeft, setDaysLeft] = useState(0);
+  const signupHref = '/login?mode=signup&redirectedFrom=/dashboard';
+
+  useEffect(() => {
+    setLifetimeActive(isLifetimeDealActive());
+    setDaysLeft(lifetimeDaysLeft());
+  }, []);
 
   useEffect(() => {
     if (window.Paddle) {
@@ -112,12 +119,17 @@ export default function PricingPage() {
     }
 
     try {
-      const purchaseId = `${plan}-${Date.now()}`;
+      const checkoutResponse = await fetch('/api/paddle/checkout', { method: 'POST' });
+      const checkoutData = await checkoutResponse.json();
+      if (!checkoutResponse.ok || !checkoutData?.customData || !checkoutData?.customerEmail || !checkoutData?.purchaseId) {
+        throw new Error('Checkout session could not be prepared');
+      }
+
       window.Paddle.Checkout.open({
         items: [{ priceId, quantity: 1 }],
-        customer: { email: user.email },
-        customData: { user_id: user.id },
-        successUrl: `${window.location.origin}/dashboard?upgraded=true&purchase=${encodeURIComponent(purchaseId)}`,
+        customer: { email: checkoutData.customerEmail },
+        customData: checkoutData.customData,
+        successUrl: `${window.location.origin}/dashboard?upgraded=true&purchase=${encodeURIComponent(checkoutData.purchaseId)}`,
         settings: {
           displayMode: 'overlay',
           theme: 'dark',
@@ -160,7 +172,7 @@ export default function PricingPage() {
             </p>
             <div className="metric-row">
               <div className="metric-pill">
-                <span className="metric-value">5</span>
+                <span className="metric-value">{FREE_PLAN_USES}</span>
                 <span className="metric-label">{t.pricingPage.metricFreeLabel}</span>
               </div>
               <div className="metric-pill">
@@ -240,7 +252,7 @@ export default function PricingPage() {
                   </div>
 
                   {plan.id === 'free' ? (
-                    <button className="secondary-btn" style={{ width: '100%' }} onClick={() => router.push('/dashboard')}>
+                    <button className="secondary-btn" style={{ width: '100%' }} onClick={() => router.push(signupHref)}>
                       {t.pricingPage.plans.free.cta}
                     </button>
                   ) : (

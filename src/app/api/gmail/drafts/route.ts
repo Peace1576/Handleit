@@ -1,5 +1,6 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { createGmailDraft, decryptRefreshToken, refreshAccessToken } from '@/lib/gmail';
+import { rateLimit } from '@/lib/ratelimit';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,9 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const rl = await rateLimit(req, 'api', user.id);
+  if (!rl.success) return rl.response!;
 
   let to: string | null = null;
   let subject = '';

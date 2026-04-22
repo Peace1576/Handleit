@@ -9,6 +9,7 @@ import { HandleItRobotLogo } from '@/components/Logo';
 import { trackGoogleAdsConversion } from '@/lib/googleAds';
 import { ClipboardList, Mail, MessageCircle, ArrowRight, Settings, History, LogOut, Menu, Sparkles, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { SavedResult, ToolId } from '@/types';
 
 const GOOGLE_ADS_PURCHASE_CONVERSION_ID =
   process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_CONVERSION_ID ??
@@ -23,6 +24,8 @@ function DashboardContent() {
   const [scrolled, setScrolled] = useState(false);
   const [showUpgraded, setShowUpgraded] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [recentResults, setRecentResults] = useState<SavedResult[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const { t } = useLanguage();
 
   const TOOLS = [
@@ -30,6 +33,11 @@ function DashboardContent() {
     { id: 'complaint-letter', Icon: Mail, name: t.letterName, desc: t.letterDesc, color: '#8B7BFF', accent: t.tools.letter.accent },
     { id: 'ai-reply', Icon: MessageCircle, name: t.replyName, desc: t.replyDesc, color: '#33D0A5', accent: t.tools.reply.accent },
   ];
+  const TOOL_META: Record<ToolId, { Icon: typeof ClipboardList; name: string; color: string }> = {
+    form: { Icon: ClipboardList, name: t.formName, color: '#58A6FF' },
+    letter: { Icon: Mail, name: t.letterName, color: '#8B7BFF' },
+    reply: { Icon: MessageCircle, name: t.replyName, color: '#33D0A5' },
+  };
 
   useEffect(() => {
     if (searchParams.get('upgraded') === 'true') {
@@ -77,6 +85,26 @@ function DashboardContent() {
       document.removeEventListener('touchstart', handlePointerDown);
     };
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const loadRecentResults = async () => {
+      try {
+        const res = await supabase
+          .from('saved_results')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        setRecentResults((res.data as SavedResult[]) ?? []);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    loadRecentResults();
+  }, []);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -175,9 +203,9 @@ function DashboardContent() {
               {t.dashboardPage.quickStart}
             </div>
             <div style={{ display: 'grid', gap: 12 }}>
-              {t.dashboardPage.quickStartSteps.map(step => (
+              {t.dashboardPage.quickStartSteps.map((step, index) => (
                 <div key={step} style={{ display: 'flex', gap: 10, color: 'rgba(245,249,255,0.74)', fontSize: 14, lineHeight: 1.6 }}>
-                  <span style={{ width: 22, height: 22, borderRadius: 999, background: 'rgba(88,166,255,0.16)', border: '1px solid rgba(88,166,255,0.26)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#58A6FF', fontWeight: 800, fontSize: 12, flexShrink: 0 }}>•</span>
+                  <span style={{ width: 22, height: 22, borderRadius: 999, background: 'rgba(88,166,255,0.16)', border: '1px solid rgba(88,166,255,0.26)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#58A6FF', fontWeight: 800, fontSize: 12, flexShrink: 0 }}>{index + 1}</span>
                   <span>{step}</span>
                 </div>
               ))}
@@ -207,6 +235,52 @@ function DashboardContent() {
             </div>
           ))}
         </div>
+
+        {!historyLoading && recentResults.length > 0 && (
+          <section style={{ marginTop: 28 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 18, flexWrap: 'wrap' }}>
+              <div>
+                <div className="section-label" style={{ marginBottom: 8 }}>{t.history}</div>
+                <div style={{ color: 'white', fontSize: 22, fontWeight: 800 }}>{t.historyPage.title}</div>
+              </div>
+              <button className="secondary-btn" onClick={() => router.push('/history')}>
+                <History size={15} />
+                {t.history}
+              </button>
+            </div>
+
+            <div className="auto-grid">
+              {recentResults.map(item => {
+                const meta = TOOL_META[item.tool_id];
+                const Icon = meta.Icon;
+                const previewText = item.input_text.length > 140 ? `${item.input_text.slice(0, 140)}...` : item.input_text;
+
+                return (
+                  <div key={item.id} className="surface-card fade-up" style={{ padding: 18 }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{ width: 42, height: 42, borderRadius: 14, background: `${meta.color}18`, border: `1px solid ${meta.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon size={18} color={meta.color} />
+                      </div>
+                      <div>
+                        <div style={{ color: 'white', fontWeight: 800, fontSize: 15 }}>{meta.name}</div>
+                        <div style={{ color: 'rgba(232,241,255,0.42)', fontSize: 12 }}>
+                          {new Date(item.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ color: 'rgba(232,241,255,0.68)', fontSize: 13, lineHeight: 1.7, marginBottom: 14 }}>
+                      {previewText}
+                    </div>
+                    <button className="secondary-btn" onClick={() => router.push('/history')}>
+                      {t.dashOpen}
+                      <ArrowRight size={15} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

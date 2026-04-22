@@ -4,14 +4,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/ratelimit';
 
 export async function GET(req: NextRequest) {
-  const rl = await rateLimit(req, 'api');
-  if (!rl.success) return rl.response!;
   const supabase = createServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const rl = await rateLimit(req, 'api', user.id);
+  if (!rl.success) return rl.response!;
 
   const admin = createServiceRoleClient();
 

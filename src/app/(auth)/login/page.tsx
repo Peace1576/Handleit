@@ -52,8 +52,9 @@ function LoginForm() {
   const params = useSearchParams();
   const { t } = useLanguage();
   const redirectedFrom = safeRedirectPath(params.get('redirectedFrom'));
+  const initialTab = params.get('mode') === 'signup' ? 'signup' : 'signin';
 
-  const [tab, setTab] = useState<'signin' | 'signup'>('signin');
+  const [tab, setTab] = useState<'signin' | 'signup'>(initialTab);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -127,20 +128,6 @@ function LoginForm() {
     }
 
     setLoading(true);
-
-    try {
-      const check = await fetch(`https://www.disify.com/api/email/${encodeURIComponent(email.trim())}`)
-        .then(res => res.json())
-        .catch(() => null);
-
-      if (check && check.disposable === true) {
-        setError(t.loginPage.errors.disposableEmail);
-        setLoading(false);
-        return;
-      }
-    } catch {
-      // Ignore disposable-email lookup failures and continue.
-    }
 
     const supabase = createClient();
     const { error: signUpError } = await supabase.auth.signUp({

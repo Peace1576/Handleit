@@ -8,6 +8,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { ClipboardList, Mail, Menu, MessageCircle, ArrowRight, CheckCircle2, Shield, Sparkles, X } from 'lucide-react';
 import { isLifetimeDealActive } from '@/lib/launch';
 
+const SIGNUP_HREF = '/login?mode=signup&redirectedFrom=/dashboard';
+const LOGIN_HREF = '/login?redirectedFrom=/dashboard';
+
 export default function LandingPage() {
   const router = useRouter();
   const { t } = useLanguage();
@@ -15,8 +18,9 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [lifetimeActive, setLifetimeActive] = useState(false);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
-  const lifetimeActive = isLifetimeDealActive();
   const PREVIEW_TABS = [
     { ...t.landingPage.previewTabs[0], color: '#58A6FF' },
     { ...t.landingPage.previewTabs[1], color: '#8B7BFF' },
@@ -33,6 +37,11 @@ export default function LandingPage() {
     const onScroll = () => setScrolled(window.scrollY > 24);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    setLifetimeActive(isLifetimeDealActive());
+    setCurrentYear(new Date().getFullYear());
   }, []);
 
   useEffect(() => {
@@ -61,6 +70,7 @@ export default function LandingPage() {
   }, [mobileMenuOpen]);
 
   const preview = PREVIEW_TABS[activeTab];
+  const startFreeLabel = t.startFree.replace(/\s*(\u2192|â†’)\s*$/, '').trim();
 
   return (
     <div className="ios-bg" style={{ minHeight: '100vh', position: 'relative' }}>
@@ -85,8 +95,8 @@ export default function LandingPage() {
           <div className="desktop-nav-actions landing-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button className="ghost-btn landing-nav-link" onClick={() => router.push('/pricing')}>{t.pricing}</button>
             <button className="ghost-btn landing-nav-link" onClick={() => document.querySelector('#faq')?.scrollIntoView({ behavior: 'smooth' })}>{t.faq}</button>
-            <button className="secondary-btn landing-nav-cta" onClick={() => router.push('/login')}>{t.logIn}</button>
-            <button className="primary-btn landing-nav-cta" onClick={() => router.push('/dashboard')}>{t.startFree.replace(' →', '')} <ArrowRight size={16} /></button>
+            <button className="secondary-btn landing-nav-cta" onClick={() => router.push(LOGIN_HREF)}>{t.logIn}</button>
+            <button className="primary-btn landing-nav-cta" onClick={() => router.push(SIGNUP_HREF)}>{startFreeLabel} <ArrowRight size={16} /></button>
           </div>
 
           <div className="mobile-nav-shell" ref={mobileMenuRef}>
@@ -107,11 +117,11 @@ export default function LandingPage() {
                 <button className="ghost-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); document.querySelector('#faq')?.scrollIntoView({ behavior: 'smooth' }); }}>
                   {t.faq}
                 </button>
-                <button className="secondary-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); router.push('/login'); }}>
+                <button className="secondary-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); router.push(LOGIN_HREF); }}>
                   {t.logIn}
                 </button>
-                <button className="primary-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); router.push('/dashboard'); }}>
-                  {t.startFree.replace(' →', '')}
+                <button className="primary-btn mobile-nav-item" onClick={() => { setMobileMenuOpen(false); router.push(SIGNUP_HREF); }}>
+                  {startFreeLabel}
                   <ArrowRight size={16} />
                 </button>
               </div>
@@ -139,7 +149,7 @@ export default function LandingPage() {
             </p>
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-              <button className="primary-btn" onClick={() => router.push('/dashboard')}>
+              <button className="primary-btn" onClick={() => router.push(SIGNUP_HREF)}>
                 {t.landingPage.tryFreeCta}
                 <ArrowRight size={16} />
               </button>
@@ -233,26 +243,25 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── What renters discover ─────────────────────────────────────── */}
       <section style={{ padding: '0 16px 56px' }}>
         <div className="page-wrap">
           <div className="surface-card fade-up" style={{ padding: '24px 26px' }}>
             <div style={{ color: 'rgba(232,241,255,0.42)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 18 }}>
-              What Form Explainer commonly finds
+              What Form Explainer commonly catches
             </div>
             <div style={{ display: 'grid', gap: 18 }}>
               {([
                 {
-                  clause: '"Tenant shall forfeit deposit and pay two months\' rent as liquidated damages upon early termination."',
-                  finding: 'Above standard — most leases cap this at one month. Ask for a job-relocation exception before signing.',
+                  clause: '"Box 14: NY SDI"',
+                  finding: 'This usually refers to New York State Disability Insurance withholding. It is informational for many filers, but worth confirming before you submit anything.',
                 },
                 {
-                  clause: '"Landlord may enter the premises with 12 hours\' notice for inspection or maintenance."',
-                  finding: 'Below the legal minimum in most states (24–48 hours). Get 24 hours notice added in writing.',
+                  clause: '"I authorize the provider to share my records with affiliates and service partners."',
+                  finding: 'Broad data-sharing language. Ask what gets shared, with whom, and whether you can narrow that consent.',
                 },
                 {
-                  clause: '"This lease automatically renews for an additional 12-month term unless cancelled 60 days prior."',
-                  finding: 'Easy to miss and expensive to miss. Negotiate 30 days — 60 is landlord-friendly, not standard.',
+                  clause: '"This subscription renews automatically unless canceled 30 days before the term ends."',
+                  finding: 'Easy to miss and expensive to miss. Set a reminder now or ask for a shorter cancellation window before you agree.',
                 },
               ] as { clause: string; finding: string }[]).map(({ clause, finding }) => (
                 <div key={clause} style={{ display: 'grid', gap: 8 }}>
@@ -268,14 +277,14 @@ export default function LandingPage() {
             </div>
             <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <span style={{ color: 'rgba(232,241,255,0.44)', fontSize: 13 }}>
-                These clause types appear in leases everywhere. Most renters never catch them.
+                Small clauses, vague permissions, and hidden deadlines create avoidable problems. HandleIt makes them obvious fast.
               </span>
               <button
                 className="primary-btn"
                 style={{ fontSize: 13, padding: '8px 16px', whiteSpace: 'nowrap' }}
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push(SIGNUP_HREF)}
               >
-                Check my lease <ArrowRight size={14} />
+                Try Form Explainer <ArrowRight size={14} />
               </button>
             </div>
           </div>
@@ -329,7 +338,7 @@ export default function LandingPage() {
                       </div>
                     ))}
                   </div>
-                  <button className="secondary-btn" onClick={() => router.push('/dashboard')}>
+                  <button className="secondary-btn" onClick={() => router.push(SIGNUP_HREF)}>
                     {t.dashOpen}
                     <ArrowRight size={15} />
                   </button>
@@ -358,7 +367,7 @@ export default function LandingPage() {
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, background: 'none', border: 'none', color: 'white', cursor: 'pointer', textAlign: 'left' }}
                 >
                   <span style={{ fontWeight: 700, fontSize: 15, lineHeight: 1.5 }}>{faq.q}</span>
-                  <span style={{ color: 'rgba(232,241,255,0.48)', fontSize: 20 }}>{openFaq === index ? '−' : '+'}</span>
+                  <span style={{ color: 'rgba(232,241,255,0.48)', fontSize: 20 }}>{openFaq === index ? '-' : '+'}</span>
                 </button>
                 {openFaq === index && (
                   <div style={{ color: 'rgba(232,241,255,0.68)', fontSize: 14, lineHeight: 1.7, marginTop: 12 }}>
@@ -381,8 +390,8 @@ export default function LandingPage() {
             {t.landingPage.finalSubtitle}
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="primary-btn" onClick={() => router.push('/dashboard')}>
-              {t.startFree.replace(' →', '')}
+            <button className="primary-btn" onClick={() => router.push(SIGNUP_HREF)}>
+              {startFreeLabel}
               <ArrowRight size={16} />
             </button>
             <button className="secondary-btn" onClick={() => router.push('/pricing')}>
@@ -394,10 +403,10 @@ export default function LandingPage() {
 
       <footer style={{ padding: '0 16px 40px' }}>
         <div className="page-wrap" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', color: 'rgba(232,241,255,0.4)', fontSize: 12 }}>
-          <div>© {new Date().getFullYear()} HandleIt</div>
+          <div>&copy; {currentYear ?? ''} HandleIt</div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button className="ghost-btn" onClick={() => router.push('/pricing')}>{t.pricing}</button>
-            <button className="ghost-btn" onClick={() => router.push('/login')}>{t.logIn}</button>
+            <button className="ghost-btn" onClick={() => router.push(LOGIN_HREF)}>{t.logIn}</button>
             <button className="ghost-btn" onClick={() => router.push('/legal/terms')}>{t.terms}</button>
             <button className="ghost-btn" onClick={() => router.push('/legal/privacy')}>{t.privacy}</button>
           </div>

@@ -7,14 +7,14 @@ export interface Language {
 }
 
 export const LANGUAGES: Language[] = [
-  { code: 'en', name: 'English',    label: 'English',             flag: '🇺🇸', dir: 'ltr' },
-  { code: 'es', name: 'Español',    label: 'Spanish',             flag: '🇪🇸', dir: 'ltr' },
-  { code: 'fr', name: 'Français',   label: 'French',              flag: '🇫🇷', dir: 'ltr' },
-  { code: 'pt', name: 'Português',  label: 'Portuguese',          flag: '🇧🇷', dir: 'ltr' },
-  { code: 'de', name: 'Deutsch',    label: 'German',              flag: '🇩🇪', dir: 'ltr' },
-  { code: 'zh', name: '中文',        label: 'Chinese (Simplified)',flag: '🇨🇳', dir: 'ltr' },
-  { code: 'ar', name: 'العربية',    label: 'Arabic',              flag: '🇸🇦', dir: 'rtl' },
-  { code: 'hi', name: 'हिन्दी',      label: 'Hindi',               flag: '🇮🇳', dir: 'ltr' },
+  { code: 'en', name: 'English', label: 'English', flag: '🇺🇸', dir: 'ltr' },
+  { code: 'es', name: 'Español', label: 'Spanish', flag: '🇪🇸', dir: 'ltr' },
+  { code: 'fr', name: 'Français', label: 'French', flag: '🇫🇷', dir: 'ltr' },
+  { code: 'pt', name: 'Português', label: 'Portuguese', flag: '🇧🇷', dir: 'ltr' },
+  { code: 'de', name: 'Deutsch', label: 'German', flag: '🇩🇪', dir: 'ltr' },
+  { code: 'zh', name: '中文', label: 'Chinese (Simplified)', flag: '🇨🇳', dir: 'ltr' },
+  { code: 'ar', name: 'العربية', label: 'Arabic', flag: '🇸🇦', dir: 'rtl' },
+  { code: 'hi', name: 'हिन्दी', label: 'Hindi', flag: '🇮🇳', dir: 'ltr' },
 ];
 
 export type TranslationKey = typeof TRANSLATIONS['en'];

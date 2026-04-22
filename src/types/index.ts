@@ -46,7 +46,7 @@ export interface Subscription {
   user_id: string;
   stripe_subscription_id: string | null;
   status: string;
-  plan: 'pro' | 'lifetime';
+  plan: 'basic' | 'pro' | 'lifetime';
   current_period_end: string | null;
   created_at: string;
   updated_at: string;

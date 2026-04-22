@@ -45,6 +45,10 @@ export async function GET(req: NextRequest) {
   const supabase = createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  if (!user || user.id !== payload.userId) {
+    return errorRedirect(req, '/login', 'gmail_connect_failed');
+  }
+
   try {
     const tokens = await exchangeCodeForTokens(code, payload.redirectUri);
     if (!tokens.refresh_token || !tokens.access_token) {
@@ -64,9 +68,7 @@ export async function GET(req: NextRequest) {
       onConflict: 'user_id',
     });
 
-    const redirectTarget = user
-      ? new URL(payload.next, req.url)
-      : new URL(`/login?redirectedFrom=${encodeURIComponent(payload.next)}&gmail_connected=true`, req.url);
+    const redirectTarget = new URL(payload.next, req.url);
 
     const res = NextResponse.redirect(redirectTarget);
     res.cookies.set({

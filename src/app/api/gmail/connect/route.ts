@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { buildGoogleConnectUrl, buildGoogleRedirectUri, createOAuthState, getStateCookieName } from '@/lib/gmail';
+import { rateLimit } from '@/lib/ratelimit';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,9 @@ export async function GET(req: NextRequest) {
       loginUrl.searchParams.set('redirectedFrom', '/tools/complaint-letter');
       return NextResponse.redirect(loginUrl);
     }
+
+    const rl = await rateLimit(req, 'api', user.id);
+    if (!rl.success) return rl.response!;
 
     const state = createOAuthState();
     const next = safeRedirectPath(req.nextUrl.searchParams.get('next'));

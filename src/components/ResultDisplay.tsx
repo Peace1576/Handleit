@@ -13,6 +13,29 @@ interface Props {
   toolId?: string;
 }
 
+const BULLET_PREFIX = '\u2022 ';
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function normalizeLine(line: string) {
+  return line.replace(/\*\*/g, '').trimEnd();
+}
+
+function isListItem(line: string) {
+  return line.startsWith(BULLET_PREFIX) || line.startsWith('- ');
+}
+
+function stripListPrefix(line: string) {
+  return normalizeLine(line).slice(2).trimStart();
+}
+
 export function ResultDisplay({ result, color, toolId }: Props) {
   const { t } = useLanguage();
   const displayText = typeof result === 'string' ? result : result.text;
@@ -112,14 +135,15 @@ export function ResultDisplay({ result, color, toolId }: Props) {
       .split('\n')
       .map(line => {
         if (!line.trim()) return '<div style="height:10px"></div>';
-        const clean = line.replace(/\*\*/g, '');
+
+        const clean = normalizeLine(line);
         if (line.startsWith('**') || (line.toUpperCase() === line && line.length < 50 && line.trim())) {
-          return `<p style="font-weight:700;margin:18px 0 6px;text-transform:uppercase;letter-spacing:0.06em;font-size:13px;color:#334155;">${clean}</p>`;
+          return `<p style="font-weight:700;margin:18px 0 6px;text-transform:uppercase;letter-spacing:0.06em;font-size:13px;color:#334155;">${escapeHtml(clean)}</p>`;
         }
-        if (line.startsWith('• ') || line.startsWith('- ')) {
-          return `<p style="margin:0 0 8px;padding-left:16px;">• ${line.slice(2)}</p>`;
+        if (isListItem(line)) {
+          return `<p style="margin:0 0 8px;padding-left:16px;">&bull; ${escapeHtml(stripListPrefix(line))}</p>`;
         }
-        return `<p style="margin:0 0 10px;">${clean}</p>`;
+        return `<p style="margin:0 0 10px;">${escapeHtml(clean)}</p>`;
       })
       .join('');
 
@@ -163,8 +187,8 @@ export function ResultDisplay({ result, color, toolId }: Props) {
 </head>
 <body>
   <div class="header">
-    <div class="title">${t.resultCard.pdfTitle}</div>
-    <div class="brand">${t.resultCard.pdfGeneratedBy}</div>
+    <div class="title">${escapeHtml(t.resultCard.pdfTitle)}</div>
+    <div class="brand">${escapeHtml(t.resultCard.pdfGeneratedBy)}</div>
   </div>
   <div>${htmlLines}</div>
   <div class="footer">handleit.help</div>
@@ -233,7 +257,7 @@ export function ResultDisplay({ result, color, toolId }: Props) {
 
   const lines = displayText.split('\n').map((line, index) => {
     if (!line.trim()) return <div key={index} style={{ height: 10 }} />;
-    const clean = line.replace(/\*\*/g, '');
+    const clean = normalizeLine(line);
 
     if (line.startsWith('**') || (line.toUpperCase() === line && line.length < 36 && line.trim())) {
       return (
@@ -243,11 +267,11 @@ export function ResultDisplay({ result, color, toolId }: Props) {
       );
     }
 
-    if (line.startsWith('• ') || line.startsWith('- ')) {
+    if (isListItem(line)) {
       return (
         <div key={index} style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-          <span style={{ color, marginTop: 2, flexShrink: 0 }}>•</span>
-          <span style={{ color: 'rgba(245,249,255,0.78)', fontSize: 14, lineHeight: 1.75 }}>{line.slice(2)}</span>
+          <span aria-hidden="true" style={{ color, marginTop: 2, flexShrink: 0 }}>&bull;</span>
+          <span style={{ color: 'rgba(245,249,255,0.78)', fontSize: 14, lineHeight: 1.75 }}>{stripListPrefix(line)}</span>
         </div>
       );
     }
@@ -261,7 +285,7 @@ export function ResultDisplay({ result, color, toolId }: Props) {
 
   return (
     <div className="surface-card fade-up" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
         <div>
           <div className="section-label" style={{ color, marginBottom: 8 }}>{t.resultCard.label}</div>
           <div style={{ color: 'white', fontWeight: 800, fontSize: 22 }}>{t.resultCard.title}</div>
@@ -303,7 +327,7 @@ export function ResultDisplay({ result, color, toolId }: Props) {
               <div className="section-label" style={{ marginBottom: 8 }}>{t.resultCard.suggestedRecipient}</div>
               <div style={{ color: 'rgba(245,249,255,0.84)', fontSize: 14, lineHeight: 1.6 }}>
                 {complaintDraft.recipientName ?? t.resultCard.fallbackRecipient}
-                {complaintDraft.recipientRole ? ` · ${complaintDraft.recipientRole}` : ''}
+                {complaintDraft.recipientRole ? ` - ${complaintDraft.recipientRole}` : ''}
               </div>
             </div>
           </div>

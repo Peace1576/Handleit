@@ -1,15 +1,19 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/ratelimit';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const supabase = createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const rl = await rateLimit(req, 'api', user.id);
+  if (!rl.success) return rl.response!;
 
   const admin = createServiceRoleClient();
   const { data, error } = await admin
@@ -31,13 +35,16 @@ export async function GET() {
   });
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
   const supabase = createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const rl = await rateLimit(req, 'api', user.id);
+  if (!rl.success) return rl.response!;
 
   const admin = createServiceRoleClient();
   const { error } = await admin
