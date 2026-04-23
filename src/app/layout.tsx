@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { PostHogProvider } from '@/components/PostHogProvider';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { LanguageGate } from '@/components/LanguageGate';
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </LanguageProvider>
         </PostHogProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
